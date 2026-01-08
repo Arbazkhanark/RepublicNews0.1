@@ -239,6 +239,116 @@
 
 
 
+// // src/lib/mongodb.ts
+// import mongoose from 'mongoose';
+
+// const MONGODB_URI =
+//   process.env.MONGODB_URI ||
+//   'mongodb+srv://arbaazkhanark23_db_user:6APCjmKsqQ5YeU3X@cluster0.uqvoox7.mongodb.net/republicmirror';
+
+// if (!MONGODB_URI) {
+//   throw new Error(
+//     '❌ Please define the MONGODB_URI environment variable inside .env.local'
+//   );
+// }
+
+// // Type for global mongoose cache (for hot reload in dev)
+// interface MongooseCache {
+//   conn: typeof mongoose | null;
+//   promise: Promise<typeof mongoose> | null;
+// }
+
+// // Prevent TypeScript error on global
+// declare global {
+//   var mongooseCache: MongooseCache | undefined;
+// }
+
+// // Use existing cache or create new one
+// const cached: MongooseCache = global.mongooseCache || {
+//   conn: null,
+//   promise: null,
+// };
+
+// if (!global.mongooseCache) {
+//   global.mongooseCache = cached;
+// }
+
+// // 🔌 Connect to MongoDB
+// async function connectToDatabase(): Promise<typeof mongoose> {
+//   if (cached.conn) {
+//     return cached.conn;
+//   }
+
+//   if (!cached.promise) {
+//     const opts = {
+//       bufferCommands: false,
+//     };
+
+//     console.log('🔗 Connecting to MongoDB...');
+
+//     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+//       console.log('✅ MongoDB connected successfully');
+
+//       // ✅ Add event listeners safely after connection
+//       mongooseInstance.connection.on('connected', () => {
+//         console.log('✅ Mongoose connected to MongoDB');
+//       });
+
+//       mongooseInstance.connection.on('error', (err) => {
+//         console.error('❌ Mongoose connection error:', err);
+//       });
+
+//       mongooseInstance.connection.on('disconnected', () => {
+//         console.log('⚠️ Mongoose disconnected from MongoDB');
+//       });
+
+//       return mongooseInstance;
+//     });
+//   }
+
+//   try {
+//     cached.conn = await cached.promise;
+//   } catch (error) {
+//     cached.promise = null;
+//     console.error('❌ Failed to connect to MongoDB:', error);
+//     throw error;
+//   }
+
+//   return cached.conn;
+// }
+
+// // 🧠 Prevent duplicate model registration in development (hot reload fix)
+// const modelRegistry = new Set<string>();
+
+// export function registerModel<T extends mongoose.Document>(
+//   modelName: string,
+//   schema: mongoose.Schema<T>
+// ): mongoose.Model<T> {
+//   if (modelRegistry.has(modelName)) {
+//     return mongoose.model<T>(modelName);
+//   }
+
+//   if (mongoose.models[modelName]) {
+//     modelRegistry.add(modelName);
+//     return mongoose.model<T>(modelName);
+//   }
+
+//   modelRegistry.add(modelName);
+//   return mongoose.model<T>(modelName, schema);
+// }
+
+// export { connectToDatabase };
+
+
+
+
+
+
+
+
+
+
+
 // src/lib/mongodb.ts
 import mongoose from 'mongoose';
 
@@ -252,25 +362,33 @@ if (!MONGODB_URI) {
   );
 }
 
-// Type for global mongoose cache (for hot reload in dev)
+// Type for global mongoose cache
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 }
 
-// Prevent TypeScript error on global
-declare global {
-  var mongooseCache: MongooseCache | undefined;
-}
+// SAFE WAY: Check if global exists (for Edge Runtime compatibility)
+const getGlobal = (): any => {
+  if (typeof global !== 'undefined') {
+    return global;
+  }
+  if (typeof window !== 'undefined') {
+    return window;
+  }
+  return {};
+};
 
-// Use existing cache or create new one
-const cached: MongooseCache = global.mongooseCache || {
+const g = getGlobal();
+
+// Initialize cache safely
+const cached: MongooseCache = g.mongooseCache || {
   conn: null,
   promise: null,
 };
 
-if (!global.mongooseCache) {
-  global.mongooseCache = cached;
+if (!g.mongooseCache) {
+  g.mongooseCache = cached;
 }
 
 // 🔌 Connect to MongoDB
@@ -289,7 +407,6 @@ async function connectToDatabase(): Promise<typeof mongoose> {
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
       console.log('✅ MongoDB connected successfully');
 
-      // ✅ Add event listeners safely after connection
       mongooseInstance.connection.on('connected', () => {
         console.log('✅ Mongoose connected to MongoDB');
       });
@@ -317,7 +434,7 @@ async function connectToDatabase(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
-// 🧠 Prevent duplicate model registration in development (hot reload fix)
+// 🧠 Prevent duplicate model registration
 const modelRegistry = new Set<string>();
 
 export function registerModel<T extends mongoose.Document>(
