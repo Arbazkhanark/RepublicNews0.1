@@ -51,8 +51,64 @@ import { GoogleAdSense } from "@/components/public/google-adsense";
 // import { GoogleAdSense } from "@/components/google-adsense"
 import { ChevronRight } from "lucide-react";
 
+interface Evidence {
+  type: string;
+  url: string;
+  title: string;
+  description?: string;
+  timestamp?: string;
+  _id?: string;
+}
+
+interface DebunkedBy {
+  name: string;
+  logo?: string;
+  expertise?: string;
+  verificationDate?: string;
+  _id?: string;
+}
+
+interface VerifiedSource {
+  name: string;
+  url: string;
+  type: string;
+  credibilityScore?: number;
+  _id?: string;
+}
+
+interface TimelineEvent {
+  date: string;
+  event: string;
+  description: string;
+  _id?: string;
+}
+
+interface VisualComparison {
+  original?: string;
+  manipulated?: string;
+  analysis?: string;
+  _id?: string;
+}
+
+interface Impact {
+  reach: number;
+  countries: string[];
+  platforms: string[];
+  duration: string;
+  _id?: string;
+}
+
+interface FactChecker {
+  name: string;
+  avatar?: string;
+  expertise: string[];
+  experience?: string;
+  verifiedChecks: number;
+  _id?: string;
+}
+
 interface FakeNewsReport {
-  id: string;
+  _id: string;
   title: string;
   titleHi: string;
   fakeClaim: string;
@@ -61,72 +117,36 @@ interface FakeNewsReport {
   factCheckHi: string;
   explanation: string;
   explanationHi: string;
-  detailedAnalysis: string;
-  detailedAnalysisHi: string;
-  evidence: {
-    type: "image" | "video" | "document" | "link" | "audio";
-    url: string;
-    title: string;
-    description: string;
-    timestamp?: string;
-  }[];
-  category:
-    | "political"
-    | "health"
-    | "technology"
-    | "entertainment"
-    | "social"
-    | "other";
+  detailedAnalysis?: string;
+  detailedAnalysisHi?: string;
+  evidence: Evidence[];
+  category: "political" | "health" | "technology" | "entertainment" | "social" | "other";
   severity: "low" | "medium" | "high" | "critical";
   origin: string;
-  spreadPlatforms: string[];
-  debunkedBy: {
-    name: string;
-    logo?: string;
-    expertise: string;
-    verificationDate: string;
-  }[];
+  spreadPlatforms?: string[];
+  debunkedBy: DebunkedBy[];
   debunkedAt: string;
+  verifiedSources: VerifiedSource[];
+  tags: string[];
+  relatedReports?: string[];
+  timeline?: TimelineEvent[];
+  visualComparison?: VisualComparison;
+  impact?: Impact;
+  preventionTips?: string[];
+  factChecker?: FactChecker;
   views: number;
   shares: number;
   helpfulVotes: number;
-  verifiedSources: {
-    name: string;
-    url: string;
-    type: "government" | "fact_checker" | "media" | "expert" | "academic";
-    credibilityScore: number;
-  }[];
-  tags: string[];
-  relatedReports: {
-    id: string;
-    title: string;
-    category: string;
-    severity: string;
-  }[];
-  timeline: {
-    date: string;
-    event: string;
-    description: string;
-  }[];
-  visualComparison?: {
-    original: string;
-    manipulated: string;
-    analysis: string;
-  };
-  impact: {
-    reach: number;
-    countries: string[];
-    platforms: string[];
-    duration: string;
-  };
-  preventionTips: string[];
-  factChecker: {
-    name: string;
-    avatar: string;
-    expertise: string[];
-    experience: string;
-    verifiedChecks: number;
-  };
+  status: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: FakeNewsReport;
 }
 
 const FakeNewsReportPage = () => {
@@ -142,22 +162,59 @@ const FakeNewsReportPage = () => {
   const [isHelpful, setIsHelpful] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Sample report data - आप इसे अपने API से replace कर सकते हैं
-  const sampleReport: FakeNewsReport = {
-    id: "1",
-    title: "AI Generated Video of PM Modi Announces Free Electricity",
-    titleHi: "पीएम मोदी का AI जनरेटेड वीडियो मुफ्त बिजली की घोषणा करता है",
-    fakeClaim:
-      "PM Modi in a video announced free electricity for all Indian households starting from next month",
-    fakeClaimHi:
-      "पीएम मोदी ने एक वीडियो में अगले महीने से सभी भारतीय घरों के लिए मुफ्त बिजली की घोषणा की",
-    factCheck: "Completely False - AI Generated Deepfake Video",
-    factCheckHi: "पूरी तरह से झूठ - AI जनरेटेड डीपफेक वीडियो",
-    explanation:
-      "The viral video is a sophisticated deepfake created using advanced AI technology. The audio and visuals have been manipulated to make it appear as if PM Modi is making this announcement.",
-    explanationHi:
-      "वायरल वीडियो उन्नत AI तकनीक का उपयोग करके बनाया गया एक परिष्कृत डीपफेक है। ऑडियो और विजुअल में हेरफेर किया गया है ताकि ऐसा प्रतीत हो कि पीएम मोदी यह घोषणा कर रहे हैं।",
-    detailedAnalysis: `
+  // Fetch report data from API
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `http://localhost:3000/api/admin/fake-news/${reportId}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data: ApiResponse = await response.json();
+        
+        if (data.success && data.data) {
+          setReport(data.data);
+        } else {
+          console.error('API Error:', data.message);
+          // Fallback to sample data if API fails
+          setReport(getSampleReport());
+        }
+      } catch (error) {
+        console.error('Error fetching report:', error);
+        // Fallback to sample data
+        setReport(getSampleReport());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (reportId) {
+      fetchReport();
+    }
+  }, [reportId]);
+
+  // Sample data fallback
+  const getSampleReport = (): FakeNewsReport => {
+    return {
+      _id: "1",
+      title: "AI Generated Video of PM Modi Announces Free Electricity",
+      titleHi: "पीएम मोदी का AI जनरेटेड वीडियो मुफ्त बिजली की घोषणा करता है",
+      fakeClaim:
+        "PM Modi in a video announced free electricity for all Indian households starting from next month",
+      fakeClaimHi:
+        "पीएम मोदी ने एक वीडियो में अगले महीने से सभी भारतीय घरों के लिए मुफ्त बिजली की घोषणा की",
+      factCheck: "Completely False - AI Generated Deepfake Video",
+      factCheckHi: "पूरी तरह से झूठ - AI जनरेटेड डीपफेक वीडियो",
+      explanation:
+        "The viral video is a sophisticated deepfake created using advanced AI technology. The audio and visuals have been manipulated to make it appear as if PM Modi is making this announcement.",
+      explanationHi:
+        "वायरल वीडियो उन्नत AI तकनीक का उपयोग करके बनाया गया एक परिष्कृत डीपफेक है। ऑडियो और विजुअल में हेरफेर किया गया है ताकि ऐसा प्रतीत हो कि पीएम मोदी यह घोषणा कर रहे हैं।",
+      detailedAnalysis: `
 ## Technical Analysis
 
 ### 1. Audio Analysis
@@ -182,7 +239,7 @@ const FakeNewsReportPage = () => {
 3. **Policy Inconsistency**: No such policy discussed in Parliament
 4. **Timing Mismatch**: Video claims announcement was made on weekend, but PM was at official event
 `,
-    detailedAnalysisHi: `
+      detailedAnalysisHi: `
 ## तकनीकी विश्लेषण
 
 ### 1. ऑडियो विश्लेषण
@@ -207,197 +264,171 @@ const FakeNewsReportPage = () => {
 3. **नीति असंगति**: संसद में ऐसी कोई नीति चर्चा नहीं हुई
 4. **समय बेमेल**: वीडियो में दावा है कि घोषणा सप्ताहांत में की गई थी, लेकिन पीएम आधिकारिक कार्यक्रम में थे
 `,
-    evidence: [
-      {
-        type: "video",
-        url: "#",
-        title: "Original Viral Video",
-        description: "The complete fake video that went viral",
-        timestamp: "2:45",
-      },
-      {
-        type: "video",
-        url: "#",
-        title: "Forensic Analysis Report",
-        description: "Detailed technical analysis by digital forensics team",
-        timestamp: "15:30",
-      },
-      {
-        type: "document",
-        url: "#",
-        title: "PMO Official Denial",
-        description: "Official statement from Prime Minister's Office",
-        timestamp: undefined,
-      },
-      {
-        type: "image",
-        url: "#",
-        title: "Audio Waveform Comparison",
-        description: "Comparison between authentic and fake audio",
-        timestamp: undefined,
-      },
-      {
-        type: "link",
-        url: "#",
-        title: "AI Detection Tool Results",
-        description: "Results from AI detection software showing manipulation",
-        timestamp: undefined,
-      },
-    ],
-    category: "political",
-    severity: "high",
-    origin: "Unknown Telegram Channel",
-    spreadPlatforms: ["WhatsApp", "Facebook", "Twitter", "YouTube", "Telegram"],
-    debunkedBy: [
-      {
-        name: "Alt News",
-        expertise: "Digital Forensics",
-        verificationDate: "2024-01-12",
-      },
-      {
-        name: "Factly",
-        expertise: "Policy Analysis",
-        verificationDate: "2024-01-13",
-      },
-      {
-        name: "BBC Reality Check",
-        expertise: "International Fact Checking",
-        verificationDate: "2024-01-14",
-      },
-    ],
-    debunkedAt: "2024-01-15",
-    views: 32450,
-    shares: 1280,
-    helpfulVotes: 2450,
-    verifiedSources: [
-      {
-        name: "Prime Minister's Office (PMO)",
-        url: "#",
-        type: "government",
-        credibilityScore: 100,
-      },
-      {
-        name: "Ministry of Power",
-        url: "#",
-        type: "government",
-        credibilityScore: 100,
-      },
-      {
-        name: "Stanford Internet Observatory",
-        url: "#",
-        type: "academic",
-        credibilityScore: 95,
-      },
-      {
-        name: "Reuters Fact Check",
-        url: "#",
-        type: "media",
-        credibilityScore: 98,
-      },
-    ],
-    tags: [
-      "Deepfake",
-      "AI",
-      "Political Manipulation",
-      "Viral Video",
-      "Electricity",
-      "Government Policy",
-    ],
-    relatedReports: [
-      {
-        id: "2",
-        title: "Fake RBI Notification About New Currency",
-        category: "financial",
-        severity: "critical",
-      },
-      {
-        id: "3",
-        title: "AI Generated Voice of Rahul Gandhi",
-        category: "political",
-        severity: "medium",
-      },
-      {
-        id: "4",
-        title: "Fake Health Advisory About COVID Vaccine",
-        category: "health",
-        severity: "high",
-      },
-    ],
-    timeline: [
-      {
-        date: "2024-01-10",
-        event: "Video Created",
-        description: "Deepfake video created using AI tools",
-      },
-      {
-        date: "2024-01-11",
-        event: "First Appearance",
-        description: "First spotted on Telegram channel",
-      },
-      {
-        date: "2024-01-12",
-        event: "Went Viral",
-        description: "Shared 50,000+ times on WhatsApp",
-      },
-      {
-        date: "2024-01-13",
-        event: "Fact Check Initiated",
-        description: "Our team started investigation",
-      },
-      {
-        date: "2024-01-14",
-        event: "Technical Analysis Complete",
-        description: "Digital forensics confirmed manipulation",
-      },
-      {
-        date: "2024-01-15",
-        event: "Report Published",
-        description: "Full debunking report published",
-      },
-    ],
-    visualComparison: {
-      original:
-        "https://placehold.co/600x400/3b82f6/ffffff?text=Original+Video",
-      manipulated:
-        "https://placehold.co/600x400/ef4444/ffffff?text=Manipulated+Video",
-      analysis: "Lip-sync mismatch: 22%, Audio frequency anomalies detected",
-    },
-    impact: {
-      reach: 2500000,
-      countries: ["India", "USA", "UK", "UAE", "Canada"],
-      platforms: [
-        "WhatsApp (65%)",
-        "Facebook (20%)",
-        "Twitter (10%)",
-        "YouTube (5%)",
+      evidence: [
+        {
+          type: "video",
+          url: "#",
+          title: "Original Viral Video",
+          description: "The complete fake video that went viral",
+          timestamp: "2:45",
+        },
+        {
+          type: "video",
+          url: "#",
+          title: "Forensic Analysis Report",
+          description: "Detailed technical analysis by digital forensics team",
+          timestamp: "15:30",
+        },
+        {
+          type: "document",
+          url: "#",
+          title: "PMO Official Denial",
+          description: "Official statement from Prime Minister's Office",
+          timestamp: undefined,
+        },
+        {
+          type: "image",
+          url: "#",
+          title: "Audio Waveform Comparison",
+          description: "Comparison between authentic and fake audio",
+          timestamp: undefined,
+        },
+        {
+          type: "link",
+          url: "#",
+          title: "AI Detection Tool Results",
+          description: "Results from AI detection software showing manipulation",
+          timestamp: undefined,
+        },
       ],
-      duration: "5 days",
-    },
-    preventionTips: [
-      "Verify with official government sources",
-      "Check for multiple reliable sources",
-      "Use reverse image search",
-      "Look for metadata inconsistencies",
-      "Consult fact-checking organizations",
-      "Be skeptical of too-good-to-be-true offers",
-    ],
-    factChecker: {
-      name: "Dr. Arjun Sharma",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun",
-      expertise: ["Digital Forensics", "AI Detection", "Media Analysis"],
-      experience: "8 years",
-      verifiedChecks: 1247,
-    },
+      category: "political",
+      severity: "high",
+      origin: "Unknown Telegram Channel",
+      spreadPlatforms: ["WhatsApp", "Facebook", "Twitter", "YouTube", "Telegram"],
+      debunkedBy: [
+        {
+          name: "Alt News",
+          expertise: "Digital Forensics",
+          verificationDate: "2024-01-12",
+        },
+        {
+          name: "Factly",
+          expertise: "Policy Analysis",
+          verificationDate: "2024-01-13",
+        },
+        {
+          name: "BBC Reality Check",
+          expertise: "International Fact Checking",
+          verificationDate: "2024-01-14",
+        },
+      ],
+      debunkedAt: "2024-01-15",
+      views: 32450,
+      shares: 1280,
+      helpfulVotes: 2450,
+      verifiedSources: [
+        {
+          name: "Prime Minister's Office (PMO)",
+          url: "#",
+          type: "government",
+          credibilityScore: 100,
+        },
+        {
+          name: "Ministry of Power",
+          url: "#",
+          type: "government",
+          credibilityScore: 100,
+        },
+        {
+          name: "Stanford Internet Observatory",
+          url: "#",
+          type: "academic",
+          credibilityScore: 95,
+        },
+        {
+          name: "Reuters Fact Check",
+          url: "#",
+          type: "media",
+          credibilityScore: 98,
+        },
+      ],
+      tags: [
+        "Deepfake",
+        "AI",
+        "Political Manipulation",
+        "Viral Video",
+        "Electricity",
+        "Government Policy",
+      ],
+      relatedReports: [],
+      timeline: [
+        {
+          date: "2024-01-10",
+          event: "Video Created",
+          description: "Deepfake video created using AI tools",
+        },
+        {
+          date: "2024-01-11",
+          event: "First Appearance",
+          description: "First spotted on Telegram channel",
+        },
+        {
+          date: "2024-01-12",
+          event: "Went Viral",
+          description: "Shared 50,000+ times on WhatsApp",
+        },
+        {
+          date: "2024-01-13",
+          event: "Fact Check Initiated",
+          description: "Our team started investigation",
+        },
+        {
+          date: "2024-01-14",
+          event: "Technical Analysis Complete",
+          description: "Digital forensics confirmed manipulation",
+        },
+        {
+          date: "2024-01-15",
+          event: "Report Published",
+          description: "Full debunking report published",
+        },
+      ],
+      visualComparison: {
+        original: "https://placehold.co/600x400/3b82f6/ffffff?text=Original+Video",
+        manipulated: "https://placehold.co/600x400/ef4444/ffffff?text=Manipulated+Video",
+        analysis: "Lip-sync mismatch: 22%, Audio frequency anomalies detected",
+      },
+      impact: {
+        reach: 2500000,
+        countries: ["India", "USA", "UK", "UAE", "Canada"],
+        platforms: [
+          "WhatsApp (65%)",
+          "Facebook (20%)",
+          "Twitter (10%)",
+          "YouTube (5%)",
+        ],
+        duration: "5 days",
+      },
+      preventionTips: [
+        "Verify with official government sources",
+        "Check for multiple reliable sources",
+        "Use reverse image search",
+        "Look for metadata inconsistencies",
+        "Consult fact-checking organizations",
+        "Be skeptical of too-good-to-be-true offers",
+      ],
+      factChecker: {
+        name: "Dr. Arjun Sharma",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun",
+        expertise: ["Digital Forensics", "AI Detection", "Media Analysis"],
+        experience: "8 years",
+        verifiedChecks: 1247,
+      },
+      status: "published",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   };
-
-  useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      setReport(sampleReport);
-      setLoading(false);
-    }, 800);
-  }, [reportId]);
 
   const severityColors = {
     low: "bg-green-100 text-green-800 border-green-200",
@@ -480,6 +511,44 @@ const FakeNewsReportPage = () => {
       </div>
     );
   }
+
+  // Helper function to render markdown content
+  const renderMarkdown = (content: string) => {
+    if (!content) return null;
+    
+    const lines = content.split('\n');
+    return lines.map((line, index) => {
+      if (line.startsWith('## ')) {
+        return (
+          <h2 key={index} className="text-2xl font-bold mt-6 mb-3">
+            {line.replace('## ', '')}
+          </h2>
+        );
+      }
+      if (line.startsWith('### ')) {
+        return (
+          <h3 key={index} className="text-xl font-semibold mt-4 mb-2">
+            {line.replace('### ', '')}
+          </h3>
+        );
+      }
+      if (line.startsWith('- ') || line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ') || line.startsWith('4. ')) {
+        return (
+          <li key={index} className="ml-4 mb-1">
+            {line.replace('- ', '').replace(/^\d+\.\s*/, '')}
+          </li>
+        );
+      }
+      if (line.trim() === '') {
+        return <br key={index} />;
+      }
+      return (
+        <p key={index} className="mb-2">
+          {line}
+        </p>
+      );
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -660,57 +729,62 @@ const FakeNewsReportPage = () => {
 
                   {/* Overview Tab */}
                   <TabsContent value="overview" className="space-y-6 pt-4">
-                    <div>
-                      <h3 className="font-bold text-xl mb-3">
-                        {language === "hi" ? "मुख्य बिंदु" : "Key Points"}
-                      </h3>
-                      <ul className="space-y-2">
-                        {report.preventionTips.slice(0, 5).map((tip, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                            <span>{tip}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    {/* Prevention Tips */}
+                    {report.preventionTips && report.preventionTips.length > 0 && (
+                      <div>
+                        <h3 className="font-bold text-xl mb-3">
+                          {language === "hi" ? "मुख्य बिंदु" : "Key Points"}
+                        </h3>
+                        <ul className="space-y-2">
+                          {report.preventionTips.slice(0, 5).map((tip, index) => (
+                            <li key={index} className="flex items-start gap-2">
+                              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                              <span>{tip}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     {/* Timeline */}
-                    <div>
-                      <h3 className="font-bold text-xl mb-3">
-                        {language === "hi" ? "समयरेखा" : "Timeline"}
-                      </h3>
-                      <div className="relative">
-                        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                        <div className="space-y-6 pl-10">
-                          {report.timeline.map((item, index) => (
-                            <div key={index} className="relative">
-                              <div className="absolute -left-10 top-1 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                                <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-                              </div>
-                              <div className="bg-white border rounded-lg p-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                                  <span className="font-semibold">
-                                    {item.event}
-                                  </span>
-                                  <Badge variant="outline">
-                                    {new Date(item.date).toLocaleDateString(
-                                      "en-IN",
-                                      {
-                                        day: "numeric",
-                                        month: "short",
-                                      }
-                                    )}
-                                  </Badge>
+                    {report.timeline && report.timeline.length > 0 && (
+                      <div>
+                        <h3 className="font-bold text-xl mb-3">
+                          {language === "hi" ? "समयरेखा" : "Timeline"}
+                        </h3>
+                        <div className="relative">
+                          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                          <div className="space-y-6 pl-10">
+                            {report.timeline.map((item, index) => (
+                              <div key={item._id || index} className="relative">
+                                <div className="absolute -left-10 top-1 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                  <div className="w-3 h-3 bg-red-600 rounded-full"></div>
                                 </div>
-                                <p className="text-gray-600">
-                                  {item.description}
-                                </p>
+                                <div className="bg-white border rounded-lg p-4">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                                    <span className="font-semibold">
+                                      {item.event}
+                                    </span>
+                                    <Badge variant="outline">
+                                      {new Date(item.date).toLocaleDateString(
+                                        "en-IN",
+                                        {
+                                          day: "numeric",
+                                          month: "short",
+                                        }
+                                      )}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-gray-600">
+                                    {item.description}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Visual Comparison */}
                     {report.visualComparison && (
@@ -721,100 +795,121 @@ const FakeNewsReportPage = () => {
                             : "Visual Comparison"}
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="text-center">
-                            <div className="relative h-48 w-full mb-2 rounded-lg overflow-hidden">
-                              <Image
-                                src={report.visualComparison.original}
-                                alt="Original"
-                                fill
-                                className="object-cover"
-                              />
+                          {report.visualComparison.original && (
+                            <div className="text-center">
+                              <div className="relative h-48 w-full mb-2 rounded-lg overflow-hidden">
+                                <Image
+                                  // src={report.visualComparison.original}
+                                  src={'https://images.pexels.com/photos/906982/pexels-photo-906982.jpeg'}
+                                  alt="Original"
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <p className="font-medium text-green-700">
+                                {language === "hi"
+                                  ? "मूल वीडियो"
+                                  : "Original Video"}
+                              </p>
                             </div>
-                            <p className="font-medium text-green-700">
-                              {language === "hi"
-                                ? "मूल वीडियो"
-                                : "Original Video"}
+                          )}
+                          {report.visualComparison.manipulated && (
+                            <div className="text-center">
+                              <div className="relative h-48 w-full mb-2 rounded-lg overflow-hidden">
+                                <Image
+                                  // src={report.visualComparison.manipulated}
+                                  src={'https://images.pexels.com/photos/906982/pexels-photo-906982.jpeg'}
+                                  alt="Manipulated"
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <p className="font-medium text-red-700">
+                                {language === "hi"
+                                  ? "हेरफेर वाला वीडियो"
+                                  : "Manipulated Video"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        {report.visualComparison.analysis && (
+                          <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                            <p className="text-sm">
+                              <span className="font-semibold">
+                                {language === "hi" ? "विश्लेषण:" : "Analysis:"}
+                              </span>{" "}
+                              {report.visualComparison.analysis}
                             </p>
                           </div>
-                          <div className="text-center">
-                            <div className="relative h-48 w-full mb-2 rounded-lg overflow-hidden">
-                              <Image
-                                src={report.visualComparison.manipulated}
-                                alt="Manipulated"
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <p className="font-medium text-red-700">
-                              {language === "hi"
-                                ? "हेरफेर वाला वीडियो"
-                                : "Manipulated Video"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                          <p className="text-sm">
-                            <span className="font-semibold">
-                              {language === "hi" ? "विश्लेषण:" : "Analysis:"}
-                            </span>{" "}
-                            {report.visualComparison.analysis}
-                          </p>
-                        </div>
+                        )}
                       </div>
                     )}
                   </TabsContent>
 
                   {/* Evidence Tab */}
                   <TabsContent value="evidence" className="space-y-6 pt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {report.evidence.map((item, index) => (
-                        <Card key={index}>
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center gap-3">
-                              {item.type === "video" && (
-                                <Video className="h-5 w-5 text-red-600" />
-                              )}
-                              {item.type === "image" && (
-                                <ImageIcon className="h-5 w-5 text-blue-600" />
-                              )}
-                              {item.type === "document" && (
-                                <FileText className="h-5 w-5 text-green-600" />
-                              )}
-                              {item.type === "link" && (
-                                <LinkIcon className="h-5 w-5 text-purple-600" />
-                              )}
-                              {item.type === "audio" && (
-                                <FileText className="h-5 w-5 text-orange-600" />
-                              )}
-                              <CardTitle className="text-base">
-                                {item.title}
-                              </CardTitle>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-gray-600 mb-3">
-                              {item.description}
-                            </p>
-                            {item.timestamp && (
-                              <div className="flex items-center gap-1 text-sm text-gray-500">
-                                <Clock className="h-4 w-4" />
-                                Timestamp: {item.timestamp}
+                    {report.evidence && report.evidence.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {report.evidence.map((item, index) => (
+                          <Card key={item._id || index}>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center gap-3">
+                                {item.type === "video" && (
+                                  <Video className="h-5 w-5 text-red-600" />
+                                )}
+                                {item.type === "image" && (
+                                  <ImageIcon className="h-5 w-5 text-blue-600" />
+                                )}
+                                {item.type === "document" && (
+                                  <FileText className="h-5 w-5 text-green-600" />
+                                )}
+                                {item.type === "link" && (
+                                  <LinkIcon className="h-5 w-5 text-purple-600" />
+                                )}
+                                {item.type === "audio" && (
+                                  <FileText className="h-5 w-5 text-orange-600" />
+                                )}
+                                <CardTitle className="text-base">
+                                  {item.title}
+                                </CardTitle>
                               </div>
-                            )}
-                          </CardContent>
-                          <CardFooter>
-                            <Button size="sm" className="w-full gap-2" asChild>
-                              <Link href={item.url} target="_blank">
-                                <ExternalLink className="h-4 w-4" />
-                                {language === "hi"
-                                  ? "सबूत देखें"
-                                  : "View Evidence"}
-                              </Link>
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
+                            </CardHeader>
+                            <CardContent>
+                              {item.description && (
+                                <p className="text-sm text-gray-600 mb-3">
+                                  {item.description}
+                                </p>
+                              )}
+                              {item.timestamp && (
+                                <div className="flex items-center gap-1 text-sm text-gray-500">
+                                  <Clock className="h-4 w-4" />
+                                  Timestamp: {item.timestamp}
+                                </div>
+                              )}
+                            </CardContent>
+                            <CardFooter>
+                              <Button size="sm" className="w-full gap-2" asChild>
+                                <Link href={item.url} target="_blank">
+                                  <ExternalLink className="h-4 w-4" />
+                                  {language === "hi"
+                                    ? "सबूत देखें"
+                                    : "View Evidence"}
+                                </Link>
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600">
+                          {language === "hi"
+                            ? "कोई सबूत उपलब्ध नहीं है"
+                            : "No evidence available"}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Download Section */}
                     <Card>
@@ -857,56 +952,60 @@ const FakeNewsReportPage = () => {
 
                   {/* Analysis Tab */}
                   <TabsContent value="analysis" className="space-y-6 pt-4">
-                    <div className="prose max-w-none">
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            language === "hi"
-                              ? report.detailedAnalysisHi
-                              : report.detailedAnalysis,
-                        }}
-                      />
-                    </div>
+                    {/* Detailed Analysis */}
+                    {(report.detailedAnalysis || report.detailedAnalysisHi) && (
+                      <div className="prose max-w-none">
+                        {renderMarkdown(
+                          language === "hi" 
+                            ? report.detailedAnalysisHi || report.detailedAnalysis || ""
+                            : report.detailedAnalysis || report.detailedAnalysisHi || ""
+                        )}
+                      </div>
+                    )}
 
                     {/* Verified Sources */}
-                    <div>
-                      <h3 className="font-bold text-xl mb-4">
-                        {language === "hi"
-                          ? "प्रामाणिक स्रोत"
-                          : "Verified Sources"}
-                      </h3>
-                      <div className="space-y-3">
-                        {report.verifiedSources.map((source, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Shield className="h-5 w-5 text-green-600" />
-                              <div>
-                                <p className="font-medium">{source.name}</p>
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs capitalize"
-                                  >
-                                    {source.type}
-                                  </Badge>
-                                  <span>
-                                    Credibility: {source.credibilityScore}%
-                                  </span>
+                    {report.verifiedSources && report.verifiedSources.length > 0 && (
+                      <div>
+                        <h3 className="font-bold text-xl mb-4">
+                          {language === "hi"
+                            ? "प्रामाणिक स्रोत"
+                            : "Verified Sources"}
+                        </h3>
+                        <div className="space-y-3">
+                          {report.verifiedSources.map((source, index) => (
+                            <div
+                              key={source._id || index}
+                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Shield className="h-5 w-5 text-green-600" />
+                                <div>
+                                  <p className="font-medium">{source.name}</p>
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs capitalize"
+                                    >
+                                      {source.type}
+                                    </Badge>
+                                    {source.credibilityScore && (
+                                      <span>
+                                        Credibility: {source.credibilityScore}%
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={source.url} target="_blank">
+                                  <ExternalLink className="h-4 w-4" />
+                                </Link>
+                              </Button>
                             </div>
-                            <Button size="sm" variant="ghost" asChild>
-                              <Link href={source.url} target="_blank">
-                                <ExternalLink className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </TabsContent>
 
                   {/* Impact Tab */}
@@ -921,135 +1020,159 @@ const FakeNewsReportPage = () => {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="text-center p-4 bg-blue-50 rounded-lg">
-                            <div className="text-2xl font-bold text-blue-700">
-                              {report.impact.reach.toLocaleString()}
-                            </div>
-                            <div className="text-sm text-blue-600">
-                              {language === "hi"
-                                ? "लोगों तक पहुंच"
-                                : "People Reached"}
-                            </div>
-                          </div>
-                          <div className="text-center p-4 bg-green-50 rounded-lg">
-                            <div className="text-2xl font-bold text-green-700">
-                              {report.impact.countries.length}
-                            </div>
-                            <div className="text-sm text-green-600">
-                              {language === "hi" ? "देश" : "Countries"}
-                            </div>
-                          </div>
-                          <div className="text-center p-4 bg-orange-50 rounded-lg">
-                            <div className="text-2xl font-bold text-orange-700">
-                              {report.impact.duration}
-                            </div>
-                            <div className="text-sm text-orange-600">
-                              {language === "hi"
-                                ? "वायरल अवधि"
-                                : "Viral Duration"}
-                            </div>
-                          </div>
-                          <div className="text-center p-4 bg-purple-50 rounded-lg">
-                            <div className="text-2xl font-bold text-purple-700">
-                              {report.impact.platforms.length}
-                            </div>
-                            <div className="text-sm text-purple-600">
-                              {language === "hi" ? "प्लेटफॉर्म" : "Platforms"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Platforms Distribution */}
-                        <div>
-                          <h4 className="font-semibold mb-2">
-                            {language === "hi"
-                              ? "प्लेटफॉर्म वितरण"
-                              : "Platform Distribution"}
-                          </h4>
-                          <div className="space-y-2">
-                            {report.impact.platforms.map((platform, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between"
-                              >
-                                <span className="text-sm">{platform}</span>
-                                <div className="w-48 bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className="bg-red-600 h-2 rounded-full"
-                                    style={{
-                                      width: `${parseInt(
-                                        platform.split("(")[1]
-                                      )}%`,
-                                    }}
-                                  ></div>
+                        {report.impact && (
+                          <>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-700">
+                                  {report.impact.reach.toLocaleString()}
+                                </div>
+                                <div className="text-sm text-blue-600">
+                                  {language === "hi"
+                                    ? "लोगों तक पहुंच"
+                                    : "People Reached"}
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
+                              <div className="text-center p-4 bg-green-50 rounded-lg">
+                                <div className="text-2xl font-bold text-green-700">
+                                  {report.impact.countries.length}
+                                </div>
+                                <div className="text-sm text-green-600">
+                                  {language === "hi" ? "देश" : "Countries"}
+                                </div>
+                              </div>
+                              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                                <div className="text-2xl font-bold text-orange-700">
+                                  {report.impact.duration}
+                                </div>
+                                <div className="text-sm text-orange-600">
+                                  {language === "hi"
+                                    ? "वायरल अवधि"
+                                    : "Viral Duration"}
+                                </div>
+                              </div>
+                              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                                <div className="text-2xl font-bold text-purple-700">
+                                  {report.impact.platforms.length}
+                                </div>
+                                <div className="text-sm text-purple-600">
+                                  {language === "hi" ? "प्लेटफॉर्म" : "Platforms"}
+                                </div>
+                              </div>
+                            </div>
 
-                        {/* Countries */}
-                        <div>
-                          <h4 className="font-semibold mb-2">
-                            {language === "hi"
-                              ? "प्रभावित देश"
-                              : "Affected Countries"}
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {report.impact.countries.map((country, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="gap-1"
-                              >
-                                <Globe className="h-3 w-3" />
-                                {country}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
+                            {/* Platforms Distribution */}
+                            <div>
+                              <h4 className="font-semibold mb-2">
+                                {language === "hi"
+                                  ? "प्लेटफॉर्म वितरण"
+                                  : "Platform Distribution"}
+                              </h4>
+                              <div className="space-y-2">
+                                {report.impact.platforms.map((platform, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center justify-between"
+                                  >
+                                    <span className="text-sm">{platform}</span>
+                                    <div className="w-48 bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-red-600 h-2 rounded-full"
+                                        style={{
+                                          width: platform.includes("(") 
+                                            ? `${parseInt(platform.split("(")[1])}%`
+                                            : "30%"
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Countries */}
+                            <div>
+                              <h4 className="font-semibold mb-2">
+                                {language === "hi"
+                                  ? "प्रभावित देश"
+                                  : "Affected Countries"}
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {report.impact.countries.map((country, index) => (
+                                  <Badge
+                                    key={index}
+                                    variant="outline"
+                                    className="gap-1"
+                                  >
+                                    <Globe className="h-3 w-3" />
+                                    {country}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </CardContent>
                     </Card>
 
                     {/* Spread Platforms */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>
-                          {language === "hi"
-                            ? "फैलाव के माध्यम"
-                            : "Spread Through"}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-3">
-                          {report.spreadPlatforms.map((platform, index) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="gap-2"
-                            >
-                              {platform === "WhatsApp" && (
-                                <MessageCircle className="h-4 w-4" />
-                              )}
-                              {platform === "Facebook" && (
-                                <div className="h-4 w-4">f</div>
-                              )}
-                              {platform === "Twitter" && (
-                                <div className="h-4 w-4">𝕏</div>
-                              )}
-                              {platform === "YouTube" && (
-                                <Video className="h-4 w-4" />
-                              )}
-                              {platform === "Telegram" && (
-                                <Send className="h-4 w-4" />
-                              )}
-                              {platform}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {report.spreadPlatforms && report.spreadPlatforms.length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>
+                            {language === "hi"
+                              ? "फैलाव के माध्यम"
+                              : "Spread Through"}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-3">
+                            {report.spreadPlatforms.map((platform, index) => (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="gap-2"
+                              >
+                                {platform === "WhatsApp" && (
+                                  <MessageCircle className="h-4 w-4" />
+                                )}
+                                {platform === "Facebook" && (
+                                  <div className="h-4 w-4">f</div>
+                                )}
+                                {platform === "Twitter" && (
+                                  <div className="h-4 w-4">𝕏</div>
+                                )}
+                                {platform === "YouTube" && (
+                                  <Video className="h-4 w-4" />
+                                )}
+                                {platform === "Telegram" && (
+                                  <Send className="h-4 w-4" />
+                                )}
+                                {platform === "whatsapp" && (
+                                  <MessageCircle className="h-4 w-4" />
+                                )}
+                                {platform === "twitter" && (
+                                  <div className="h-4 w-4">𝕏</div>
+                                )}
+                                {platform === "instagram" && (
+                                  <div className="h-4 w-4">IG</div>
+                                )}
+                                {platform === "youtube" && (
+                                  <Video className="h-4 w-4" />
+                                )}
+                                {platform === "telegram" && (
+                                  <Send className="h-4 w-4" />
+                                )}
+                                {platform === "tiktok" && (
+                                  <div className="h-4 w-4">TT</div>
+                                )}
+                                {platform}
+                              </Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </TabsContent>
                 </Tabs>
 
@@ -1094,48 +1217,34 @@ const FakeNewsReportPage = () => {
               </CardContent>
             </Card>
 
-            {/* Related Reports */}
+            {/* Related Reports (Placeholder - You might want to fetch related reports separately) */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">
                 {language === "hi" ? "संबंधित रिपोर्ट्स" : "Related Reports"}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {report.relatedReports.map((related) => (
-                  <Card
-                    key={related.id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                  >
-                    <CardContent className="p-4">
-                      <Badge
-                        className={`mb-2 ${
-                          severityColors[
-                            related.severity as keyof typeof severityColors
-                          ]
-                        }`}
-                      >
-                        {
-                          severityLabels[
-                            related.severity as keyof typeof severityLabels
-                          ]
-                        }
-                      </Badge>
-                      <h3 className="font-semibold line-clamp-2 mb-2">
-                        {related.title}
-                      </h3>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full"
-                        asChild
-                      >
-                        <Link href={`/fake-news/${related.id}`}>
-                          {language === "hi" ? "रिपोर्ट देखें" : "View Report"}
-                          <ChevronRight className="h-4 w-4 ml-1" />
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                {/* Placeholder for related reports */}
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardContent className="p-4">
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 mb-2">
+                      Medium Risk
+                    </Badge>
+                    <h3 className="font-semibold line-clamp-2 mb-2">
+                      {language === "hi" ? "अन्य फेक न्यूज रिपोर्ट" : "Other Fake News Report"}
+                    </h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      asChild
+                    >
+                      <Link href="/fake-news">
+                        {language === "hi" ? "रिपोर्ट देखें" : "View Report"}
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
@@ -1143,78 +1252,92 @@ const FakeNewsReportPage = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Fact Checker Profile */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {language === "hi" ? "तथ्य-जाँचकर्ता" : "Fact Checker"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Avatar className="h-20 w-20 mx-auto mb-3">
-                  <AvatarImage src={report.factChecker.avatar} />
-                  <AvatarFallback>FC</AvatarFallback>
-                </Avatar>
-                <h3 className="font-bold text-lg">{report.factChecker.name}</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  {report.factChecker.experience} experience
-                </p>
-                <div className="flex flex-wrap gap-1 justify-center mb-3">
-                  {report.factChecker.expertise.map((exp, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {exp}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="bg-gray-100 rounded-lg p-3 mb-3">
-                  <div className="text-2xl font-bold text-red-600">
-                    {report.factChecker.verifiedChecks}
+            {report.factChecker && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {language === "hi" ? "तथ्य-जाँचकर्ता" : "Fact Checker"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <Avatar className="h-20 w-20 mx-auto mb-3">
+                    <AvatarImage 
+                      src={report.factChecker.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=FactChecker"} 
+                    />
+                    <AvatarFallback>FC</AvatarFallback>
+                  </Avatar>
+                  <h3 className="font-bold text-lg">{report.factChecker.name}</h3>
+                  {report.factChecker.experience && (
+                    <p className="text-sm text-gray-600 mb-3">
+                      {report.factChecker.experience} experience
+                    </p>
+                  )}
+                  {report.factChecker.expertise && report.factChecker.expertise.length > 0 && (
+                    <div className="flex flex-wrap gap-1 justify-center mb-3">
+                      {report.factChecker.expertise.map((exp, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {exp}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 rounded-lg p-3 mb-3">
+                    <div className="text-2xl font-bold text-red-600">
+                      {report.factChecker.verifiedChecks}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {language === "hi" ? "सत्यापित जाँच" : "Verified Checks"}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {language === "hi" ? "सत्यापित जाँच" : "Verified Checks"}
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" className="w-full">
-                  <Mail className="h-4 w-4 mr-2" />
-                  {language === "hi" ? "संपर्क करें" : "Contact"}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button size="sm" variant="outline" className="w-full">
+                    <Mail className="h-4 w-4 mr-2" />
+                    {language === "hi" ? "संपर्क करें" : "Contact"}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Debunked By */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {language === "hi" ? "डिबंक किया गया" : "Debunked By"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {report.debunkedBy.map((org, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 text-blue-600" />
+            {report.debunkedBy && report.debunkedBy.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {language === "hi" ? "डिबंक किया गया" : "Debunked By"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {report.debunkedBy.map((org, index) => (
+                    <div
+                      key={org._id || index}
+                      className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{org.name}</p>
+                          {org.expertise && (
+                            <p className="text-xs text-gray-500">{org.expertise}</p>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{org.name}</p>
-                        <p className="text-xs text-gray-500">{org.expertise}</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {new Date(org.verificationDate).toLocaleDateString(
-                        "en-IN",
-                        {
-                          day: "numeric",
-                          month: "short",
-                        }
+                      {org.verificationDate && (
+                        <Badge variant="outline" className="text-xs">
+                          {new Date(org.verificationDate).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "numeric",
+                              month: "short",
+                            }
+                          )}
+                        </Badge>
                       )}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Report Tools */}
             <Card>
@@ -1227,6 +1350,7 @@ const FakeNewsReportPage = () => {
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
+                  onClick={() => window.open(`/report/${report._id}`, '_blank')}
                 >
                   <Smartphone className="h-4 w-4" />
                   {language === "hi" ? "ऐप पर रिपोर्ट करें" : "Report on App"}
@@ -1234,6 +1358,7 @@ const FakeNewsReportPage = () => {
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
+                  onClick={() => window.location.href = `mailto:?subject=${encodeURIComponent(report.title)}&body=${encodeURIComponent(window.location.href)}`}
                 >
                   <Mail className="h-4 w-4" />
                   {language === "hi" ? "ईमेल रिपोर्ट" : "Email Report"}
@@ -1241,6 +1366,10 @@ const FakeNewsReportPage = () => {
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
+                  onClick={() => {
+                    // This would typically trigger a PDF generation/download
+                    alert(language === "hi" ? "डाउनलोड शुरू हो रहा है..." : "Download starting...");
+                  }}
                 >
                   <Download className="h-4 w-4" />
                   {language === "hi" ? "सबूत डाउनलोड" : "Download Evidence"}
@@ -1248,6 +1377,7 @@ const FakeNewsReportPage = () => {
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
+                  onClick={copyToClipboard}
                 >
                   <LinkIcon className="h-4 w-4" />
                   {language === "hi" ? "शॉर्ट लिंक" : "Short Link"}
@@ -1256,24 +1386,26 @@ const FakeNewsReportPage = () => {
             </Card>
 
             {/* Tags */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === "hi" ? "टैग" : "Tags"}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {report.tags.map((tag, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-gray-300"
-                    >
-                      #{tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {report.tags && report.tags.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{language === "hi" ? "टैग" : "Tags"}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {report.tags.map((tag, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-gray-300"
+                      >
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Ad Space */}
             <div className="space-y-4">

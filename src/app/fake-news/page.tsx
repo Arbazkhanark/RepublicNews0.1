@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -23,6 +23,8 @@ import {
   BarChart,
   FileText,
   Video,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,13 +40,70 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 // import { Progress } from "@/components/ui/progress"
 import { PublicHeader } from "@/components/public/header";
 import { PublicFooter } from "@/components/public/footer";
 import { GoogleAdSense } from "@/components/public/google-adsense";
 
+interface Evidence {
+  type: string;
+  url: string;
+  title: string;
+  description?: string;
+  timestamp?: string;
+  _id?: string;
+}
+
+interface DebunkedBy {
+  name: string;
+  logo?: string;
+  expertise?: string;
+  verificationDate?: string;
+  _id?: string;
+}
+
+interface VerifiedSource {
+  name: string;
+  url: string;
+  type: string;
+  credibilityScore?: number;
+  _id?: string;
+}
+
+interface TimelineEvent {
+  date: string;
+  event: string;
+  description: string;
+  _id?: string;
+}
+
+interface VisualComparison {
+  original?: string;
+  manipulated?: string;
+  analysis?: string;
+  _id?: string;
+}
+
+interface Impact {
+  reach: number;
+  countries: string[];
+  platforms: string[];
+  duration: string;
+  _id?: string;
+}
+
+interface FactChecker {
+  name: string;
+  avatar?: string;
+  expertise: string[];
+  experience?: string;
+  verifiedChecks: number;
+  _id?: string;
+}
+
 interface FakeNewsItem {
-  id: string;
+  _id: string;
   title: string;
   titleHi: string;
   fakeClaim: string;
@@ -53,31 +112,46 @@ interface FakeNewsItem {
   factCheckHi: string;
   explanation: string;
   explanationHi: string;
-  evidence: {
-    type: "image" | "video" | "document" | "link";
-    url: string;
-    title: string;
-  }[];
-  category:
-    | "political"
-    | "health"
-    | "technology"
-    | "entertainment"
-    | "social"
-    | "other";
+  detailedAnalysis?: string;
+  detailedAnalysisHi?: string;
+  evidence: Evidence[];
+  category: "political" | "health" | "technology" | "entertainment" | "social" | "other";
   severity: "low" | "medium" | "high" | "critical";
   origin: string;
-  debunkedBy: string[];
+  spreadPlatforms?: string[];
+  debunkedBy: DebunkedBy[];
   debunkedAt: string;
+  verifiedSources: VerifiedSource[];
+  tags: string[];
+  relatedReports?: string[];
+  timeline?: TimelineEvent[];
+  visualComparison?: VisualComparison;
+  impact?: Impact;
+  preventionTips?: string[];
+  factChecker?: FactChecker;
   views: number;
   shares: number;
-  verifiedSources: {
-    name: string;
-    url: string;
-    type: "government" | "fact_checker" | "media" | "expert";
-  }[];
-  tags: string[];
-  relatedArticles: string[];
+  helpfulVotes: number;
+  status: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    reports: FakeNewsItem[];
+    pagination: Pagination;
+  };
 }
 
 const FakeNewsPage = () => {
@@ -87,123 +161,109 @@ const FakeNewsPage = () => {
   const [bookmarkedItems, setBookmarkedItems] = useState<string[]>([]);
   const [fakeNewsData, setFakeNewsData] = useState<FakeNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 5,
+    pages: 1,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Sample data - आप इसे अपने API से replace कर सकते हैं
-  const sampleFakeNews: FakeNewsItem[] = [
-    {
-      id: "1",
-      title: "AI Generated Video of PM Modi Goes Viral",
-      titleHi: "पीएम मोदी का AI जनरेटेड वीडियो वायरल",
-      fakeClaim: "PM Modi announced free electricity for all Indians",
-      fakeClaimHi: "पीएम मोदी ने सभी भारतीयों के लिए मुफ्त बिजली की घोषणा की",
-      factCheck: "Completely False - AI Generated Deepfake",
-      factCheckHi: "पूरी तरह से झूठ - AI जनरेटेड डीपफेक",
-      explanation:
-        "The viral video is a deepfake created using AI technology. The PMO has confirmed that no such announcement was made. The video uses manipulated audio and visuals.",
-      explanationHi:
-        "वायरल वीडियो AI तकनीक का उपयोग करके बनाया गया एक डीपफेक है। पीएमओ ने पुष्टि की है कि ऐसी कोई घोषणा नहीं की गई थी। वीडियो में हेरफेर किए गए ऑडियो और विजुअल का उपयोग किया गया है।",
-      evidence: [
-        { type: "video", url: "#", title: "Original Video Analysis" },
-        { type: "document", url: "#", title: "PMO Official Statement" },
-        { type: "image", url: "#", title: "Forensic Analysis Report" },
-      ],
-      category: "political",
-      severity: "high",
-      origin: "Social Media (WhatsApp, Facebook)",
-      debunkedBy: ["AltNews", "Factly", "BBC Reality Check"],
-      debunkedAt: "2024-01-15",
-      views: 24500,
-      shares: 890,
-      verifiedSources: [
-        { name: "PIB Fact Check", url: "#", type: "government" },
-        { name: "Alt News", url: "#", type: "fact_checker" },
-        { name: "India Today Fact Check", url: "#", type: "media" },
-      ],
-      tags: ["Deepfake", "AI", "Political", "Viral Video"],
-      relatedArticles: ["article-1", "article-2"],
-    },
-    {
-      id: "2",
-      title: "Fake Cure for COVID-19 Circulating",
-      titleHi: "COVID-19 के लिए नकली इलाज प्रचलित",
-      fakeClaim: "Drinking hot water with turmeric cures COVID-19",
-      fakeClaimHi: "हल्दी के साथ गर्म पानी पीने से COVID-19 ठीक हो जाता है",
-      factCheck: "Misleading - No Scientific Evidence",
-      factCheckHi: "गलतफहमी - कोई वैज्ञानिक प्रमाण नहीं",
-      explanation:
-        "While turmeric has anti-inflammatory properties, there is no scientific evidence that it cures COVID-19. WHO and ICMR have issued warnings against such misinformation.",
-      explanationHi:
-        "हालांकि हल्दी में सूजन-रोधी गुण होते हैं, लेकिन कोई वैज्ञानिक प्रमाण नहीं है कि यह COVID-19 को ठीक करती है। WHO और ICMR ने इस तरह की गलत जानकारी के खिलाफ चेतावनी जारी की है।",
-      evidence: [
-        { type: "document", url: "#", title: "WHO Advisory" },
-        { type: "link", url: "#", title: "ICMR Official Statement" },
-        { type: "document", url: "#", title: "Medical Research Paper" },
-      ],
-      category: "health",
-      severity: "medium",
-      origin: "WhatsApp Forwards",
-      debunkedBy: ["WHO", "ICMR", "FactChecker.in"],
-      debunkedAt: "2024-01-10",
-      views: 18700,
-      shares: 450,
-      verifiedSources: [
-        { name: "World Health Organization", url: "#", type: "government" },
-        { name: "ICMR", url: "#", type: "government" },
-        { name: "Johns Hopkins Medicine", url: "#", type: "expert" },
-      ],
-      tags: ["Health", "COVID-19", "Misinformation", "WhatsApp"],
-      relatedArticles: ["article-3", "article-4"],
-    },
-    {
-      id: "3",
-      title: "Fake Stock Market Tips Scam",
-      titleHi: "नकली शेयर बाजार टिप्स स्कैम",
-      fakeClaim: "Guaranteed 500% returns in 30 days",
-      fakeClaimHi: "30 दिनों में 500% रिटर्न की गारंटी",
-      factCheck: "Scam - Financial Fraud Alert",
-      factCheckHi: "स्कैम - वित्तीय धोखाधड़ी अलर्ट",
-      explanation:
-        "SEBI has identified multiple fraudulent platforms promising unrealistic returns. These are Ponzi schemes designed to cheat investors. Always verify with registered financial advisors.",
-      explanationHi:
-        "सेबी ने अवास्तविक रिटर्न का वादा करने वाले कई धोखाधड़ी प्लेटफार्मों की पहचान की है। ये पोंजी स्कीम हैं जो निवेशकों को ठगने के लिए डिज़ाइन की गई हैं। हमेशा पंजीकृत वित्तीय सलाहकारों से सत्यापन करें।",
-      evidence: [
-        { type: "document", url: "#", title: "SEBI Warning Circular" },
-        { type: "video", url: "#", title: "Investor Awareness Video" },
-        { type: "link", url: "#", title: "Registered Advisor List" },
-      ],
-      category: "technology",
-      severity: "critical",
-      origin: "Telegram Channels",
-      debunkedBy: ["SEBI", "RBI", "Economic Times"],
-      debunkedAt: "2024-01-05",
-      views: 32100,
-      shares: 1200,
-      verifiedSources: [
-        { name: "SEBI", url: "#", type: "government" },
-        { name: "RBI", url: "#", type: "government" },
-        { name: "NSE Investor Helpline", url: "#", type: "expert" },
-      ],
-      tags: ["Financial", "Scam", "Investment", "SEBI"],
-      relatedArticles: ["article-5", "article-6"],
-    },
-  ];
-
-  useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      setFakeNewsData(sampleFakeNews);
+  // Fetch fake news data from API
+  const fetchFakeNews = useCallback(async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `http://localhost:3000/api/admin/fake-news/public?page=${page}&limit=5`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data: ApiResponse = await response.json();
+      
+      if (data.success) {
+        setFakeNewsData(data.data.reports);
+        setPagination(data.data.pagination);
+        setCurrentPage(data.data.pagination.page);
+      } else {
+        console.error('API Error:', data.message);
+        // Fallback to sample data if API fails
+        setFakeNewsData(getSampleFakeNews());
+        setPagination({
+          total: 3,
+          page: 1,
+          limit: 5,
+          pages: 1,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching fake news:', error);
+      // Fallback to sample data
+      setFakeNewsData(getSampleFakeNews());
+      setPagination({
+        total: 3,
+        page: 1,
+        limit: 5,
+        pages: 1,
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   }, []);
 
+  // Sample data fallback
+  const getSampleFakeNews = (): FakeNewsItem[] => {
+    return [
+      {
+        _id: "1",
+        title: "AI Generated Video of PM Modi Goes Viral",
+        titleHi: "पीएम मोदी का AI जनरेटेड वीडियो वायरल",
+        fakeClaim: "PM Modi announced free electricity for all Indians",
+        fakeClaimHi: "पीएम मोदी ने सभी भारतीयों के लिए मुफ्त बिजली की घोषणा की",
+        factCheck: "Completely False - AI Generated Deepfake",
+        factCheckHi: "पूरी तरह से झूठ - AI जनरेटेड डीपफेक",
+        explanation: "The viral video is a deepfake created using AI technology. The PMO has confirmed that no such announcement was made. The video uses manipulated audio and visuals.",
+        explanationHi: "वायरल वीडियो AI तकनीक का उपयोग करके बनाया गया एक डीपफेक है। पीएमओ ने पुष्टि की है कि ऐसी कोई घोषणा नहीं की गई थी। वीडियो में हेरफेर किए गए ऑडियो और विजुअल का उपयोग किया गया है।",
+        evidence: [
+          { type: "video", url: "#", title: "Original Video Analysis" },
+          { type: "document", url: "#", title: "PMO Official Statement" },
+          { type: "image", url: "#", title: "Forensic Analysis Report" },
+        ],
+        category: "political",
+        severity: "high",
+        origin: "Social Media (WhatsApp, Facebook)",
+        debunkedBy: [{ name: "AltNews" }, { name: "Factly" }, { name: "BBC Reality Check" }],
+        debunkedAt: "2024-01-15T00:00:00.000Z",
+        verifiedSources: [
+          { name: "PIB Fact Check", url: "#", type: "government" },
+          { name: "Alt News", url: "#", type: "fact_checker" },
+          { name: "India Today Fact Check", url: "#", type: "media" },
+        ],
+        tags: ["Deepfake", "AI", "Political", "Viral Video"],
+        relatedReports: [],
+        views: 24500,
+        shares: 890,
+        helpfulVotes: 0,
+        status: "published",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+  };
+
+  useEffect(() => {
+    fetchFakeNews(1);
+  }, [fetchFakeNews]);
+
   const categories = [
-    { id: "all", label: "All", count: 12, icon: Filter },
-    { id: "political", label: "Political", count: 4, icon: Users },
-    { id: "health", label: "Health", count: 3, icon: Verified },
-    { id: "technology", label: "Technology", count: 2, icon: TrendingUp },
-    { id: "social", label: "Social", count: 2, icon: MessageCircle },
-    { id: "entertainment", label: "Entertainment", count: 1, icon: Video },
+    { id: "all", label: "All", count: pagination.total, icon: Filter },
+    { id: "political", label: "Political", count: 0, icon: Users },
+    { id: "health", label: "Health", count: 0, icon: Verified },
+    { id: "technology", label: "Technology", count: 0, icon: TrendingUp },
+    { id: "social", label: "Social", count: 0, icon: MessageCircle },
+    { id: "entertainment", label: "Entertainment", count: 0, icon: Video },
   ];
 
   const severityColors = {
@@ -233,7 +293,7 @@ const FakeNewsPage = () => {
       language === "hi"
         ? `${item.titleHi} - सत्यापित तथ्य`
         : `${item.title} - Verified Facts`;
-    const url = window.location.href + `?id=${item.id}`;
+    const url = window.location.href + `?id=${item._id}`;
 
     if (navigator.share) {
       navigator.share({
@@ -261,6 +321,50 @@ const FakeNewsPage = () => {
     return true;
   });
 
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.pages) {
+      fetchFakeNews(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Render loading skeletons
+  const renderSkeletons = () => {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <Skeleton className="h-9 w-9" />
+                  <Skeleton className="h-9 w-9" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicHeader />
@@ -284,7 +388,7 @@ const FakeNewsPage = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-white/10 p-4 rounded-lg">
-                <div className="text-3xl font-bold">500+</div>
+                <div className="text-3xl font-bold">{pagination.total}+</div>
                 <div className="text-sm opacity-80">
                   {language === "hi" ? "तथ्य-जाँचे गए" : "Claims Fact-Checked"}
                 </div>
@@ -435,8 +539,8 @@ const FakeNewsPage = () => {
                 </h2>
                 <p className="text-gray-600">
                   {language === "hi"
-                    ? `${filteredData.length} आइटम मिले`
-                    : `${filteredData.length} items found`}
+                    ? `${filteredData.length} आइटम मिले (${pagination.total} total)`
+                    : `${filteredData.length} items found (${pagination.total} total)`}
                 </p>
               </div>
 
@@ -470,243 +574,308 @@ const FakeNewsPage = () => {
 
             {/* Fake News List */}
             {loading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardContent className="p-6">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              renderSkeletons()
             ) : filteredData.length > 0 ? (
-              <div className="space-y-6">
-                {filteredData.map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className={severityColors[item.severity]}>
-                              {severityLabels[item.severity]}
-                            </Badge>
-                            <Badge variant="outline">
-                              {item.category.charAt(0).toUpperCase() +
-                                item.category.slice(1)}
-                            </Badge>
-                          </div>
-                          <CardTitle className="text-xl">
-                            {language === "hi" ? item.titleHi : item.title}
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-2 mt-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              Debunked on{" "}
-                              {new Date(item.debunkedAt).toLocaleDateString()}
-                            </span>
-                            <span>•</span>
-                            <Eye className="h-4 w-4" />
-                            <span>{item.views.toLocaleString()} views</span>
-                          </CardDescription>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleBookmark(item.id)}
-                            className={
-                              bookmarkedItems.includes(item.id)
-                                ? "text-yellow-500"
-                                : ""
-                            }
-                          >
-                            <Bookmark
-                              className={`h-4 w-4 ${
-                                bookmarkedItems.includes(item.id)
-                                  ? "fill-current"
-                                  : ""
-                              }`}
-                            />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleShare(item)}
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-6">
-                      {/* Fake Claim */}
-                      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r">
-                        <div className="flex items-start gap-2">
-                          <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h3 className="font-semibold text-red-800 mb-1">
-                              {language === "hi" ? "झूठा दावा" : "False Claim"}
-                            </h3>
-                            <p className="text-red-700">
-                              {language === "hi"
-                                ? item.fakeClaimHi
-                                : item.fakeClaim}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Fact Check */}
-                      <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r">
-                        <div className="flex items-start gap-2">
-                          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h3 className="font-semibold text-green-800 mb-1">
-                              {language === "hi"
-                                ? "सत्यापित तथ्य"
-                                : "Verified Fact"}
-                            </h3>
-                            <p className="text-green-700">
-                              {language === "hi"
-                                ? item.factCheckHi
-                                : item.factCheck}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Explanation */}
-                      <div>
-                        <h3 className="font-semibold mb-2">
-                          {language === "hi"
-                            ? "विस्तृत व्याख्या"
-                            : "Detailed Explanation"}
-                        </h3>
-                        <p className="text-gray-700">
-                          {language === "hi"
-                            ? item.explanationHi
-                            : item.explanation}
-                        </p>
-                      </div>
-
-                      {/* Evidence */}
-                      <div>
-                        <h3 className="font-semibold mb-3">
-                          {language === "hi" ? "सबूत" : "Evidence"}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {item.evidence.map((evidence, idx) => (
-                            <Button
-                              key={idx}
-                              variant="outline"
-                              className="justify-start h-auto py-3"
-                              asChild
-                            >
-                              <Link href={evidence.url} target="_blank">
-                                <div className="text-left">
-                                  <div className="font-medium">
-                                    {evidence.title}
-                                  </div>
-                                  <div className="text-xs text-gray-500 capitalize">
-                                    {evidence.type}
-                                  </div>
-                                </div>
-                                <ExternalLink className="h-4 w-4 ml-auto" />
-                              </Link>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Verified Sources */}
-                      <div>
-                        <h3 className="font-semibold mb-3">
-                          {language === "hi"
-                            ? "प्रामाणिक स्रोत"
-                            : "Verified Sources"}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {item.verifiedSources.map((source, idx) => (
-                            <Badge
-                              key={idx}
-                              variant="outline"
-                              className="gap-1"
-                            >
-                              <Verified className="h-3 w-3" />
-                              {source.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      <div>
-                        <h3 className="font-semibold mb-2">
-                          {language === "hi" ? "टैग" : "Tags"}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {item.tags.map((tag, idx) => (
-                            <Badge key={idx} variant="secondary">
-                              #{tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Debunked By */}
-                      <div className="flex items-center justify-between pt-4 border-t">
-                        <div>
-                          <h4 className="text-sm font-medium mb-1">
-                            {language === "hi"
-                              ? "डिबंक किया गया"
-                              : "Debunked By"}
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            {item.debunkedBy.map((org, idx) => (
-                              <span key={idx} className="text-sm text-gray-600">
-                                {org}
-                                {idx < item.debunkedBy.length - 1 ? ", " : ""}
+              <>
+                <div className="space-y-6">
+                  {filteredData.map((item) => (
+                    <Card key={item._id} className="overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={severityColors[item.severity]}>
+                                {severityLabels[item.severity]}
+                              </Badge>
+                              <Badge variant="outline">
+                                {item.category.charAt(0).toUpperCase() +
+                                  item.category.slice(1)}
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-xl">
+                              {language === "hi" ? item.titleHi : item.title}
+                            </CardTitle>
+                            <CardDescription className="flex items-center gap-2 mt-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                Debunked on{" "}
+                                {new Date(item.debunkedAt).toLocaleDateString()}
                               </span>
-                            ))}
+                              <span>•</span>
+                              <Eye className="h-4 w-4" />
+                              <span>{item.views.toLocaleString()} views</span>
+                            </CardDescription>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleBookmark(item._id)}
+                              className={
+                                bookmarkedItems.includes(item._id)
+                                  ? "text-yellow-500"
+                                  : ""
+                              }
+                            >
+                              <Bookmark
+                                className={`h-4 w-4 ${
+                                  bookmarkedItems.includes(item._id)
+                                    ? "fill-current"
+                                    : ""
+                                }`}
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleShare(item)}
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-500">
-                            {language === "hi" ? "उत्पत्ति" : "Origin"}
-                          </div>
-                          <div className="text-sm font-medium">
-                            {item.origin}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
+                      </CardHeader>
 
-                    <CardFooter className="bg-gray-50 flex justify-between">
-                      <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <ThumbsUp className="h-4 w-4" />
-                          {language === "hi" ? "सहायक" : "Helpful"}
-                        </Button>
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <Share2 className="h-4 w-4" />
-                          {item.shares} {language === "hi" ? "शेयर" : "Shares"}
-                        </Button>
-                      </div>
-                      <Link href={`/fake-news/${item.id}`}>
-                        <Button variant="outline" size="sm" className="gap-2">
-                          {language === "hi"
-                            ? "पूरी रिपोर्ट देखें"
-                            : "View Full Report"}
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+                      <CardContent className="space-y-6">
+                        {/* Fake Claim */}
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r">
+                          <div className="flex items-start gap-2">
+                            <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h3 className="font-semibold text-red-800 mb-1">
+                                {language === "hi" ? "झूठा दावा" : "False Claim"}
+                              </h3>
+                              <p className="text-red-700">
+                                {language === "hi"
+                                  ? item.fakeClaimHi
+                                  : item.fakeClaim}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Fact Check */}
+                        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h3 className="font-semibold text-green-800 mb-1">
+                                {language === "hi"
+                                  ? "सत्यापित तथ्य"
+                                  : "Verified Fact"}
+                              </h3>
+                              <p className="text-green-700">
+                                {language === "hi"
+                                  ? item.factCheckHi
+                                  : item.factCheck}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Explanation */}
+                        <div>
+                          <h3 className="font-semibold mb-2">
+                            {language === "hi"
+                              ? "विस्तृत व्याख्या"
+                              : "Detailed Explanation"}
+                          </h3>
+                          <p className="text-gray-700">
+                            {language === "hi"
+                              ? item.explanationHi
+                              : item.explanation}
+                          </p>
+                        </div>
+
+                        {/* Evidence */}
+                        {item.evidence && item.evidence.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold mb-3">
+                              {language === "hi" ? "सबूत" : "Evidence"}
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {item.evidence.map((evidence, idx) => (
+                                <Button
+                                  key={evidence._id || idx}
+                                  variant="outline"
+                                  className="justify-start h-auto py-3"
+                                  asChild
+                                >
+                                  <Link href={evidence.url} target="_blank">
+                                    <div className="text-left">
+                                      <div className="font-medium">
+                                        {evidence.title}
+                                      </div>
+                                      <div className="text-xs text-gray-500 capitalize">
+                                        {evidence.type}
+                                      </div>
+                                    </div>
+                                    <ExternalLink className="h-4 w-4 ml-auto" />
+                                  </Link>
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Verified Sources */}
+                        {item.verifiedSources && item.verifiedSources.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold mb-3">
+                              {language === "hi"
+                                ? "प्रामाणिक स्रोत"
+                                : "Verified Sources"}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {item.verifiedSources.map((source, idx) => (
+                                <Badge
+                                  key={source._id || idx}
+                                  variant="outline"
+                                  className="gap-1"
+                                >
+                                  <Verified className="h-3 w-3" />
+                                  {source.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {item.tags && item.tags.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold mb-2">
+                              {language === "hi" ? "टैग" : "Tags"}
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {item.tags.map((tag, idx) => (
+                                <Badge key={idx} variant="secondary">
+                                  #{tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Debunked By */}
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">
+                              {language === "hi"
+                                ? "डिबंक किया गया"
+                                : "Debunked By"}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              {item.debunkedBy.map((org, idx) => (
+                                <span key={org._id || idx} className="text-sm text-gray-600">
+                                  {org.name}
+                                  {idx < item.debunkedBy.length - 1 ? ", " : ""}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-500">
+                              {language === "hi" ? "उत्पत्ति" : "Origin"}
+                            </div>
+                            <div className="text-sm font-medium">
+                              {item.origin}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="bg-gray-50 flex justify-between">
+                        <div className="flex items-center gap-4">
+                          <Button variant="ghost" size="sm" className="gap-2">
+                            <ThumbsUp className="h-4 w-4" />
+                            {item.helpfulVotes} {language === "hi" ? "सहायक" : "Helpful"}
+                          </Button>
+                          <Button variant="ghost" size="sm" className="gap-2">
+                            <Share2 className="h-4 w-4" />
+                            {item.shares} {language === "hi" ? "शेयर" : "Shares"}
+                          </Button>
+                        </div>
+                        <Link href={`/fake-news/${item._id}`}>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            {language === "hi"
+                              ? "पूरी रिपोर्ट देखें"
+                              : "View Full Report"}
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {pagination.pages > 1 && (
+                  <div className="flex items-center justify-center space-x-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="ml-2">Previous</span>
+                    </Button>
+                    
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.pages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= pagination.pages - 2) {
+                          pageNum = pagination.pages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNum)}
+                            className="w-10 h-10 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                      
+                      {pagination.pages > 5 && currentPage < pagination.pages - 2 && (
+                        <>
+                          <span className="mx-1">...</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(pagination.pages)}
+                            className="w-10 h-10 p-0"
+                          >
+                            {pagination.pages}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === pagination.pages}
+                    >
+                      <span className="mr-2">Next</span>
+                      <ChevronRightIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <Card>
                 <CardContent className="p-12 text-center">
