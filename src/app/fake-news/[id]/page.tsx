@@ -9,6 +9,8 @@ import {
   XCircle,
   Share2,
   Bookmark,
+  BookmarkCheck,
+  BookmarkX,
   AlertTriangle,
   Calendar,
   Eye,
@@ -30,6 +32,11 @@ import {
   Smartphone,
   Mail,
   Send,
+  Loader2,
+  Facebook,
+  Twitter,
+  MessageSquare,
+  Linkedin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,12 +51,21 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// import { Progress } from "@/components/ui/progress"
 import { PublicHeader } from "@/components/public/header";
 import { PublicFooter } from "@/components/public/footer";
 import { GoogleAdSense } from "@/components/public/google-adsense";
-// import { GoogleAdSense } from "@/components/google-adsense"
 import { ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Evidence {
   type: string;
@@ -137,16 +153,31 @@ interface FakeNewsReport {
   views: number;
   shares: number;
   helpfulVotes: number;
+  unhelpfulVotes: number;
   status: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  hasVoted?: "helpful" | "unhelpful" | null;
 }
 
 interface ApiResponse {
   success: boolean;
   message: string;
   data: FakeNewsReport;
+}
+
+// Interface for bookmarked item stored in localStorage
+interface BookmarkedItem {
+  id: string;
+  title: string;
+  titleHi: string;
+  factCheck: string;
+  factCheckHi: string;
+  category: string;
+  severity: string;
+  debunkedAt: string;
+  bookmarkedAt: string;
 }
 
 const FakeNewsReportPage = () => {
@@ -158,43 +189,228 @@ const FakeNewsReportPage = () => {
   const [report, setReport] = useState<FakeNewsReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isHelpful, setIsHelpful] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isVoting, setIsVoting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  // Initialize user ID
+  useEffect(() => {
+    let storedUserId = localStorage.getItem("fakeNewsUserId");
+    if (!storedUserId) {
+      storedUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem("fakeNewsUserId", storedUserId);
+    }
+    setUserId(storedUserId);
+  }, []);
+
+  // Load bookmarks from localStorage on component mount
+  useEffect(() => {
+    const savedBookmarks = localStorage.getItem("fakeNewsBookmarks");
+    if (savedBookmarks) {
+      try {
+        const bookmarks: BookmarkedItem[] = JSON.parse(savedBookmarks);
+        const isCurrentlyBookmarked = bookmarks.some(bookmark => bookmark.id === reportId);
+        setIsBookmarked(isCurrentlyBookmarked);
+      } catch (error) {
+        console.error("Error parsing bookmarks from localStorage:", error);
+      }
+    }
+  }, [reportId]);
 
   // Fetch report data from API
-  useEffect(() => {
-    const fetchReport = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `http://localhost:3000/api/admin/fake-news/${reportId}`
-        );
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: ApiResponse = await response.json();
-        
-        if (data.success && data.data) {
-          setReport(data.data);
-        } else {
-          console.error('API Error:', data.message);
-          // Fallback to sample data if API fails
-          setReport(getSampleReport());
-        }
-      } catch (error) {
-        console.error('Error fetching report:', error);
-        // Fallback to sample data
-        setReport(getSampleReport());
-      } finally {
-        setLoading(false);
+  const fetchReport = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/admin/fake-news/${reportId}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
+      
+      const data: ApiResponse = await response.json();
+      
+      if (data.success && data.data) {
+        setReport(data.data);
+        
+        // Check if this report is already bookmarked
+        const savedBookmarks = localStorage.getItem("fakeNewsBookmarks");
+        if (savedBookmarks) {
+          try {
+            const bookmarks: BookmarkedItem[] = JSON.parse(savedBookmarks);
+            const isCurrentlyBookmarked = bookmarks.some(bookmark => bookmark.id === data.data._id);
+            setIsBookmarked(isCurrentlyBookmarked);
+          } catch (error) {
+            console.error("Error checking bookmark status:", error);
+          }
+        }
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      toast.error(language === "hi" 
+        ? "रिपोर्ट लोड करने में त्रुटि" 
+        : "Error loading report"
+      );
+      // Fallback to sample data if API fails
+      setReport(getSampleReport());
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Record view function with session storage check
+  const recordView = async () => {
+    if (!reportId) return;
+    
+    const key = `viewed-${reportId}`;
+    
+    // Check if already viewed in this session
+    if (sessionStorage.getItem(key)) {
+      return;
+    }
+    
+    // Mark as viewed for this session
+    sessionStorage.setItem(key, '1');
+    
+    try {
+      const response = await fetch(`/api/admin/fake-news/public/${reportId}/view`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+      
+      if (!response.ok) {
+        console.warn('Failed to record view:', response.status);
+        return;
+      }
+      
+      const data = await response.json();
+      if (!data.success) {
+        console.warn('Failed to record view:', data.message);
+      }
+    } catch (error) {
+      console.error('Error recording view:', error);
+    }
+  };
+
+  // Share function
+  const recordShare = async (platform: 'whatsapp' | 'facebook' | 'twitter' | 'linkedin' | 'telegram' | 'email' | 'other' = 'other') => {
+    if (!reportId) return;
+    
+    try {
+      const response = await fetch(`/api/admin/fake-news/public/${reportId}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          platform,
+          userId: userId,
+          shareMethod: 'web'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update local state
+        setReport(prev => prev ? {
+          ...prev,
+          shares: data.data.totalShares,
+        } : null);
+        
+        toast.success(language === "hi" 
+          ? "सफलतापूर्वक साझा किया गया!" 
+          : "Successfully shared!"
+        );
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Error recording share:', error);
+      // Fallback: Update local state
+      setReport(prev => prev ? { ...prev, shares: prev.shares + 1 } : null);
+      toast.success(language === "hi" 
+        ? "सफलतापूर्वक साझा किया गया!" 
+        : "Successfully shared!"
+      );
+    }
+  };
+
+  // Vote function
+  const handleVote = async (voteType: 'helpful') => {
+    if (!reportId || isVoting) return;
+    
+    setIsVoting(true);
+    try {
+      const response = await fetch(`/api/admin/fake-news/public/${reportId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          voteType,
+          userId,
+        }),
+      });
+
+      const result = await response.json();
+
+      // Handle duplicate vote
+      if (response.status === 409) {
+        toast.error(language === "hi" 
+          ? "आप पहले ही इस रिपोर्ट पर वोट दे चुके हैं।" 
+          : "You have already voted on this report."
+        );
+        return;
+      }
+
+      // Handle other API errors
+      if (!response.ok) {
+        toast.error(language === "hi" 
+          ? "त्रुटि: " + (result.message || "कुछ गलत हुआ।") 
+          : "Error: " + (result.message || "Something went wrong.")
+        );
+        return;
+      }
+
+      // Success
+      toast.success(language === "hi" 
+        ? "वोट सबमिट किया गया ✅" 
+        : "Vote Submitted ✅"
+      );
+
+      // Update UI state
+      setReport(prev => prev ? {
+        ...prev,
+        helpfulVotes: result.data.helpfulVotes || prev.helpfulVotes,
+        hasVoted: voteType
+      } : null);
+
+    } catch (err) {
+      console.error("Vote error:", err);
+      toast.error(language === "hi" 
+        ? "नेटवर्क त्रुटि - कृपया बाद में पुनः प्रयास करें" 
+        : "Network Error - Please try again later"
+      );
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
+  // Fetch report and record view on component mount
+  useEffect(() => {
     if (reportId) {
       fetchReport();
+      recordView();
     }
   }, [reportId]);
 
@@ -326,6 +542,7 @@ const FakeNewsReportPage = () => {
       views: 32450,
       shares: 1280,
       helpfulVotes: 2450,
+      unhelpfulVotes: 0,
       verifiedSources: [
         {
           name: "Prime Minister's Office (PMO)",
@@ -444,23 +661,328 @@ const FakeNewsReportPage = () => {
     critical: "Critical Risk",
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  // Toggle bookmark function with API and localStorage
+  const toggleBookmark = async () => {
+    if (!report) return;
+
+    const savedBookmarks = localStorage.getItem("fakeNewsBookmarks");
+    let bookmarks: BookmarkedItem[] = savedBookmarks ? JSON.parse(savedBookmarks) : [];
+
+    const isCurrentlyBookmarked = bookmarks.some(bookmark => bookmark.id === report._id);
+
+    if (isCurrentlyBookmarked) {
+      // Remove bookmark
+      bookmarks = bookmarks.filter(bookmark => bookmark.id !== report._id);
+      setIsBookmarked(false);
+      toast.success(language === "hi" 
+        ? "बुकमार्क हटाया गया!" 
+        : "Bookmark removed!"
+      );
+    } else {
+      // Add bookmark
+      const newBookmark: BookmarkedItem = {
+        id: report._id,
+        title: report.title,
+        titleHi: report.titleHi,
+        factCheck: report.factCheck,
+        factCheckHi: report.factCheckHi,
+        category: report.category,
+        severity: report.severity,
+        debunkedAt: report.debunkedAt,
+        bookmarkedAt: new Date().toISOString(),
+      };
+      bookmarks.push(newBookmark);
+      setIsBookmarked(true);
+      toast.success(language === "hi" 
+        ? "बुकमार्क जोड़ा गया!" 
+        : "Bookmark added!"
+      );
+    }
+
+    // Save to localStorage
+    localStorage.setItem("fakeNewsBookmarks", JSON.stringify(bookmarks));
   };
 
-  const shareReport = () => {
-    if (navigator.share && report) {
-      navigator.share({
-        title: language === "hi" ? report.titleHi : report.title,
-        text:
-          language === "hi"
-            ? `तथ्य-जाँच रिपोर्ट: ${report.factCheckHi}`
-            : `Fact-Check Report: ${report.factCheck}`,
-        url: window.location.href,
-      });
+  const copyLinkToClipboard = async () => {
+    if (!report) return;
+    
+    const shareUrl = `${window.location.origin}/fake-news/${report._id}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopySuccess(true);
+      toast.success(language === "hi" 
+        ? "लिंक कॉपी किया गया!" 
+        : "Link copied!"
+      );
+      
+      // Record share
+      await recordShare('other');
+      
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      toast.error(language === "hi" 
+        ? "लिंक कॉपी करने में त्रुटि!" 
+        : "Error copying link!"
+      );
     }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      toast.success(language === "hi" 
+        ? "लिंक कॉपी किया गया!" 
+        : "Link copied!"
+      );
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (error) {
+      toast.error(language === "hi" 
+        ? "लिंक कॉपी करने में त्रुटि!" 
+        : "Error copying link!"
+      );
+    }
+  };
+
+  // Share on specific platform
+  const shareOnPlatform = async (platform: 'whatsapp' | 'facebook' | 'twitter' | 'linkedin' | 'telegram' | 'email') => {
+    if (!report) return;
+    
+    const shareUrl = `${window.location.origin}/fake-news/${report._id}`;
+    const shareText = language === "hi"
+      ? `${report.titleHi}\n\n❌ झूठा दावा: ${report.fakeClaimHi}\n✅ सत्यापित तथ्य: ${report.factCheckHi}`
+      : `${report.title}\n\n❌ False Claim: ${report.fakeClaim}\n✅ Verified Fact: ${report.factCheck}`;
+    
+    // Record the share via API
+    await recordShare(platform);
+    
+    let shareWindowUrl = "";
+    
+    switch (platform) {
+      case "whatsapp":
+        shareWindowUrl = `https://wa.me/?text=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+        break;
+      case "facebook":
+        shareWindowUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+        break;
+      case "twitter":
+        shareWindowUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+        break;
+      case "linkedin":
+        shareWindowUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+        break;
+      case "telegram":
+        shareWindowUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+        break;
+      case "email":
+        shareWindowUrl = `mailto:?subject=${encodeURIComponent(report.title)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+        break;
+      default:
+        shareWindowUrl = shareUrl;
+    }
+    
+    // Open sharing window
+    if (platform === 'email') {
+      window.location.href = shareWindowUrl;
+    } else {
+      window.open(shareWindowUrl, '_blank', 'width=600,height=400');
+    }
+    
+    // Close modal after a delay
+    setTimeout(() => {
+      setShowShareModal(false);
+    }, 1000);
+  };
+
+  // Share via native share API
+  const shareViaNative = async () => {
+    if (!report) return;
+    
+    const shareUrl = `${window.location.origin}/fake-news/${report._id}`;
+    const shareText = language === "hi"
+      ? `${report.titleHi}\n\n❌ झूठा दावा: ${report.fakeClaimHi}\n✅ सत्यापित तथ्य: ${report.factCheckHi}`
+      : `${report.title}\n\n❌ False Claim: ${report.fakeClaim}\n✅ Verified Fact: ${report.factCheck}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: language === "hi" ? "तथ्य-जाँच रिपोर्ट" : "Fact-Check Report",
+          text: shareText,
+          url: shareUrl,
+        });
+        await recordShare('other');
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // If user cancels share, don't show error
+        if (error instanceof Error && error.name !== 'AbortError') {
+          toast.error(language === "hi" 
+            ? "साझा करने में त्रुटि" 
+            : "Error sharing"
+          );
+        }
+      }
+    } else {
+      // Fallback to copy link
+      copyLinkToClipboard();
+    }
+    
+    setShowShareModal(false);
+  };
+
+  // Share Modal Component
+  const ShareModal = () => {
+    if (!report) return null;
+
+    const shareUrl = `${window.location.origin}/fake-news/${report._id}`;
+
+    return (
+      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {language === "hi" ? "रिपोर्ट साझा करें" : "Share Report"}
+            </DialogTitle>
+            <DialogDescription>
+              {language === "hi" 
+                ? "इस तथ्य-जाँच रिपोर्ट को दूसरों के साथ साझा करें" 
+                : "Share this fact-check report with others"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Copy Link Section */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                {language === "hi" ? "लिंक कॉपी करें" : "Copy Link"}
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={shareUrl}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={copyLinkToClipboard}
+                  variant={copySuccess ? "default" : "outline"}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  {copySuccess 
+                    ? (language === "hi" ? "कॉपी किया" : "Copied") 
+                    : (language === "hi" ? "कॉपी करें" : "Copy")}
+                </Button>
+              </div>
+            </div>
+
+            {/* Social Media Platforms */}
+            <div>
+              <label className="text-sm font-medium mb-3 block">
+                {language === "hi" ? "सोशल मीडिया पर साझा करें" : "Share on Social Media"}
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {/* WhatsApp */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 border-green-200"
+                  onClick={() => shareOnPlatform("whatsapp")}
+                  title="WhatsApp"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+
+                {/* Facebook */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 border-blue-200"
+                  onClick={() => shareOnPlatform("facebook")}
+                  title="Facebook"
+                >
+                  <Facebook className="h-5 w-5" />
+                </Button>
+
+                {/* Twitter */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 border-sky-200"
+                  onClick={() => shareOnPlatform("twitter")}
+                  title="Twitter"
+                >
+                  <Twitter className="h-5 w-5" />
+                </Button>
+
+                {/* LinkedIn */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800 border-blue-300"
+                  onClick={() => shareOnPlatform("linkedin")}
+                  title="LinkedIn"
+                >
+                  <Linkedin className="h-5 w-5" />
+                </Button>
+
+                {/* Telegram */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-600 border-blue-200"
+                  onClick={() => shareOnPlatform("telegram")}
+                  title="Telegram"
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Other Options */}
+            <div>
+              <label className="text-sm font-medium mb-3 block">
+                {language === "hi" ? "अन्य विकल्प" : "Other Options"}
+              </label>
+              <div className="space-y-2">
+                {navigator.share && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={shareViaNative}
+                  >
+                    <Share2 className="h-4 w-4" />
+                    {language === "hi" 
+                      ? "डिवाइस शेयर विकल्प का उपयोग करें" 
+                      : "Use device share options"}
+                  </Button>
+                )}
+                
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => shareOnPlatform("email")}
+                >
+                  <Mail className="h-4 w-4" />
+                  {language === "hi" ? "ईमेल के द्वारा भेजें" : "Share via Email"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => setShowShareModal(false)}
+              variant="outline"
+            >
+              {language === "hi" ? "बंद करें" : "Close"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   if (loading) {
@@ -586,6 +1108,12 @@ const FakeNewsReportPage = () => {
                         {report.category.charAt(0).toUpperCase() +
                           report.category.slice(1)}
                       </Badge>
+                      {isBookmarked && (
+                        <Badge variant="secondary" className="ml-2">
+                          <BookmarkCheck className="h-3 w-3 mr-1" />
+                          {language === "hi" ? "बुकमार्क किया गया" : "Bookmarked"}
+                        </Badge>
+                      )}
                     </div>
                     <CardTitle className="text-2xl md:text-3xl">
                       {language === "hi" ? report.titleHi : report.title}
@@ -617,16 +1145,23 @@ const FakeNewsReportPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsBookmarked(!isBookmarked)}
-                      className={isBookmarked ? "text-yellow-500" : ""}
+                      onClick={toggleBookmark}
+                      className={isBookmarked ? "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50" : ""}
+                      title={isBookmarked 
+                        ? (language === "hi" ? "बुकमार्क हटाएं" : "Remove bookmark") 
+                        : (language === "hi" ? "बुकमार्क जोड़ें" : "Add bookmark")}
                     >
-                      <Bookmark
-                        className={`h-4 w-4 ${
-                          isBookmarked ? "fill-current" : ""
-                        }`}
-                      />
+                      {isBookmarked ? (
+                        <BookmarkCheck className="h-4 w-4 fill-current" />
+                      ) : (
+                        <Bookmark className="h-4 w-4" />
+                      )}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={shareReport}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowShareModal(true)}
+                    >
                       <Share2 className="h-4 w-4" />
                     </Button>
                     <Button
@@ -799,7 +1334,6 @@ const FakeNewsReportPage = () => {
                             <div className="text-center">
                               <div className="relative h-48 w-full mb-2 rounded-lg overflow-hidden">
                                 <Image
-                                  // src={report.visualComparison.original}
                                   src={'https://images.pexels.com/photos/906982/pexels-photo-906982.jpeg'}
                                   alt="Original"
                                   fill
@@ -817,7 +1351,6 @@ const FakeNewsReportPage = () => {
                             <div className="text-center">
                               <div className="relative h-48 w-full mb-2 rounded-lg overflow-hidden">
                                 <Image
-                                  // src={report.visualComparison.manipulated}
                                   src={'https://images.pexels.com/photos/906982/pexels-photo-906982.jpeg'}
                                   alt="Manipulated"
                                   fill
@@ -1201,14 +1734,19 @@ const FakeNewsReportPage = () => {
                           : "Cast your vote and help others know the truth"}
                       </p>
                       <Button
-                        variant={isHelpful ? "default" : "outline"}
+                        variant={report.hasVoted === "helpful" ? "default" : "outline"}
                         className="gap-2"
-                        onClick={() => setIsHelpful(!isHelpful)}
+                        onClick={() => handleVote("helpful")}
+                        disabled={isVoting || report.hasVoted === "helpful"}
                       >
-                        <ThumbsUp className="h-4 w-4" />
-                        {isHelpful ? "Thanks for voting!" : "Helpful"}
+                        {isVoting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ThumbsUp className="h-4 w-4" />
+                        )}
+                        {report.hasVoted === "helpful" ? "Thanks for voting!" : "Helpful"}
                         <Badge variant="secondary" className="ml-2">
-                          {report.helpfulVotes + (isHelpful ? 1 : 0)}
+                          {report.helpfulVotes + (report.hasVoted === "helpful" ? 0 : (isVoting ? 1 : 0))}
                         </Badge>
                       </Button>
                     </div>
@@ -1339,6 +1877,69 @@ const FakeNewsReportPage = () => {
               </Card>
             )}
 
+            {/* Bookmark Status Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {language === "hi" ? "बुकमार्क स्थिति" : "Bookmark Status"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <div className={`h-16 w-16 rounded-full flex items-center justify-center mb-2 ${
+                    isBookmarked ? "bg-yellow-100 text-yellow-600" : "bg-gray-100 text-gray-400"
+                  }`}>
+                    {isBookmarked ? (
+                      <BookmarkCheck className="h-8 w-8 fill-current" />
+                    ) : (
+                      <Bookmark className="h-8 w-8" />
+                    )}
+                  </div>
+                  <h3 className="font-semibold">
+                    {isBookmarked 
+                      ? (language === "hi" ? "बुकमार्क किया गया है" : "Bookmarked")
+                      : (language === "hi" ? "बुकमार्क नहीं किया गया" : "Not Bookmarked")}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {isBookmarked
+                      ? (language === "hi" 
+                          ? "यह रिपोर्ट आपके बुकमार्क में सहेजी गई है।" 
+                          : "This report is saved in your bookmarks.")
+                      : (language === "hi"
+                          ? "इस रिपोर्ट को बुकमार्क करने के लिए बटन पर क्लिक करें।"
+                          : "Click the button to bookmark this report.")}
+                  </p>
+                  <Button
+                    variant={isBookmarked ? "destructive" : "default"}
+                    className="w-full gap-2"
+                    onClick={toggleBookmark}
+                  >
+                    {isBookmarked ? (
+                      <>
+                        <BookmarkX className="h-4 w-4" />
+                        {language === "hi" ? "बुकमार्क हटाएं" : "Remove Bookmark"}
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-4 w-4" />
+                        {language === "hi" ? "बुकमार्क जोड़ें" : "Add Bookmark"}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/fake-news?tab=bookmarked">
+                      {language === "hi" ? "सभी बुकमार्क देखें" : "View All Bookmarks"}
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Report Tools */}
             <Card>
               <CardHeader>
@@ -1358,7 +1959,9 @@ const FakeNewsReportPage = () => {
                 <Button
                   variant="outline"
                   className="w-full justify-start gap-2"
-                  onClick={() => window.location.href = `mailto:?subject=${encodeURIComponent(report.title)}&body=${encodeURIComponent(window.location.href)}`}
+                  onClick={async () => {
+                    await shareOnPlatform("email");
+                  }}
                 >
                   <Mail className="h-4 w-4" />
                   {language === "hi" ? "ईमेल रिपोर्ट" : "Email Report"}
@@ -1367,8 +1970,10 @@ const FakeNewsReportPage = () => {
                   variant="outline"
                   className="w-full justify-start gap-2"
                   onClick={() => {
-                    // This would typically trigger a PDF generation/download
-                    alert(language === "hi" ? "डाउनलोड शुरू हो रहा है..." : "Download starting...");
+                    toast.info(language === "hi" 
+                      ? "डाउनलोड शुरू हो रहा है..." 
+                      : "Download starting..."
+                    );
                   }}
                 >
                   <Download className="h-4 w-4" />
@@ -1425,6 +2030,9 @@ const FakeNewsReportPage = () => {
           </div>
         </div>
       </main>
+
+      {/* Share Modal */}
+      <ShareModal />
 
       <PublicFooter />
     </div>

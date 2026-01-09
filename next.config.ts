@@ -1,5 +1,7 @@
 // // next.config.js
 
+import path from "path";
+
 // /** @type {import('next').NextConfig} */
 // const nextConfig = {
 //   images: {
@@ -137,6 +139,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "api.dicebear.com", // ✅ DiceBear avatars के लिए
         pathname: "/**",
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
       },
     ],
   },
