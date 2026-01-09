@@ -33,6 +33,10 @@ import {
   Menu,
   Bell,
   Search,
+  ChartBarStacked,
+  Layers,
+  Newspaper,
+  BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -43,9 +47,6 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout, loading } = useAuth();
-  console.log(user, " state in AdminLayout...");
-  console.log(user, "User state in AdminLayout...");
-  console.log(".................................");
   const router = useRouter();
   const pathname = usePathname();
   console.log(user, "User in AdminLayout...");
@@ -93,20 +94,26 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin/articles/create", icon: Plus, label: "Create News" },
     {
       href: "/admin/newsletter",
-      icon: FileText,
+      icon: Newspaper,
       label: "Newsletter",
       adminOnly: true,
     },
     {
       href: "/admin/categories",
-      icon: FileText,
+      icon: ChartBarStacked,
       label: "Categories",
       adminOnly: true,
     },
     {
       href: "/admin/opinions",
-      icon: FileText,
+      icon: Layers,
       label: "Opinions",
+      adminOnly: true,
+    },
+    {
+      href: "/admin/fake-news",
+      icon: BadgeCheck,
+      label: "Fake News Reports",
       adminOnly: true,
     },
     { href: "/admin/users", icon: Users, label: "Users", adminOnly: true },

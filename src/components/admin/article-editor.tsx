@@ -1,116 +1,146 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
-import { Save, Eye, Send, X, ImageIcon, Loader2, Upload, Trash2 } from "lucide-react"
-import { RichTextEditor } from "@/components/admin/rich-text-editor"
-import { MediaUploader } from "@/components/admin/media-uploader"
-import { ArticlePreview } from "@/components/admin/article-preview"
-import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary-client"
+import { useState, useEffect, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import {
+  Save,
+  Eye,
+  Send,
+  X,
+  ImageIcon,
+  Loader2,
+  Upload,
+  Trash2,
+} from "lucide-react";
+import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { MediaUploader } from "@/components/admin/media-uploader";
+import { ArticlePreview } from "@/components/admin/article-preview";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} from "@/lib/cloudinary-client";
 
 interface ArticleEditorProps {
-  articleId?: string
+  articleId?: string;
 }
 
 interface Category {
-  _id: string
-  name: string
-  slug: string
-  description: string
-  color: string
-  icon: string
-  parentCategoryName: string | null
-  order: number
-  isActive: boolean
-  seoTitle: string
-  seoDescription: string
-  createdAt: string
-  updatedAt: string
-  __v: number
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  color: string;
+  icon: string;
+  parentCategoryName: string | null;
+  order: number;
+  isActive: boolean;
+  seoTitle: string;
+  seoDescription: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 
 interface CloudinaryImage {
-  url: string
-  publicId: string
-  isFeaturedImage?: boolean
-  isFeaturedArticleImage?: boolean
+  url: string;
+  publicId: string;
+  isFeaturedImage?: boolean;
+  isFeaturedArticleImage?: boolean;
 }
 
 interface SourcePersonSocial {
-  twitter: string
-  facebook: string
-  instagram: string
-  linkedin: string
+  twitter: string;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
 }
 
 interface LayoutConfig {
-  showAuthor: boolean
-  showDate: boolean
-  showCategory: boolean
-  showSocialShare: boolean
-  imagePosition: "top" | "left" | "right" | "center"
-  textAlign: "left" | "center" | "right" | "justify"
+  showAuthor: boolean;
+  showDate: boolean;
+  showCategory: boolean;
+  showSocialShare: boolean;
+  imagePosition: "top" | "left" | "right" | "center";
+  textAlign: "left" | "center" | "right" | "justify";
 }
 
 interface Article {
-  title: string
-  titleHi: string
-  subtitle: string
-  subtitleHi: string
-  content: string
-  contentHi: string
-  excerpt: string
-  excerptHi: string
-  categoryId: string
-  featuredImage: string
-  featuredArticleImage: string
-  mediaUrls: string[]
-  cloudinaryImages: CloudinaryImage[]
-  sourcePersonName: string
-  sourcePersonNameHi: string
-  sourcePersonSocial: SourcePersonSocial
-  layoutConfig: LayoutConfig
-  status: string
-  seoTitle: string
-  seoDescription: string
-  seoKeywords: string[]
-  tags: string[]
-  isBreaking: boolean
-  isFeatured: boolean
-  scheduledAt: string
+  title: string;
+  titleHi: string;
+  subtitle: string;
+  subtitleHi: string;
+  content: string;
+  contentHi: string;
+  excerpt: string;
+  excerptHi: string;
+  categoryId: string;
+  featuredImage: string;
+  featuredArticleImage: string;
+  mediaUrls: string[];
+  cloudinaryImages: CloudinaryImage[];
+  sourcePersonName: string;
+  sourcePersonNameHi: string;
+  sourcePersonSocial: SourcePersonSocial;
+  layoutConfig: LayoutConfig;
+  status: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string[];
+  tags: string[];
+  isBreaking: boolean;
+  isFeatured: boolean;
+  scheduledAt: string;
 }
 
 // Simple toast implementation
 const useToast = () => {
-  const showToast = (title: string, description: string, variant: "default" | "destructive" = "default") => {
-    const toast = document.createElement("div")
+  const showToast = (
+    title: string,
+    description: string,
+    variant: "default" | "destructive" = "default"
+  ) => {
+    const toast = document.createElement("div");
     toast.className = `fixed top-4 right-4 p-4 rounded-md shadow-md z-50 ${
-      variant === "destructive" ? "bg-red-100 text-red-800 border border-red-200" : "bg-green-100 text-green-800 border border-green-200"
-    }`
+      variant === "destructive"
+        ? "bg-red-100 text-red-800 border border-red-200"
+        : "bg-green-100 text-green-800 border border-green-200"
+    }`;
     toast.innerHTML = `
       <div class="font-semibold">${title}</div>
       <div class="text-sm">${description}</div>
-    `
-    
-    document.body.appendChild(toast)
-    
+    `;
+
+    document.body.appendChild(toast);
+
     setTimeout(() => {
-      document.body.removeChild(toast)
-    }, 3000)
-  }
+      document.body.removeChild(toast);
+    }, 3000);
+  };
 
   return {
-    toast: showToast
-  }
-}
+    toast: showToast,
+  };
+};
 
 const defaultLayoutConfig: LayoutConfig = {
   showAuthor: true,
@@ -118,15 +148,15 @@ const defaultLayoutConfig: LayoutConfig = {
   showCategory: true,
   showSocialShare: true,
   imagePosition: "top",
-  textAlign: "left"
-}
+  textAlign: "left",
+};
 
 const defaultSourcePersonSocial: SourcePersonSocial = {
   twitter: "",
   facebook: "",
   instagram: "",
-  linkedin: ""
-}
+  linkedin: "",
+};
 
 const defaultArticle: Article = {
   title: "",
@@ -153,87 +183,93 @@ const defaultArticle: Article = {
   tags: [],
   isBreaking: false,
   isFeatured: false,
-  scheduledAt: ""
-}
+  scheduledAt: "",
+};
 
 export function ArticleEditor({ articleId }: ArticleEditorProps) {
-  const [activeTab, setActiveTab] = useState("editor")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [groupedCategories, setGroupedCategories] = useState<{ [key: string]: Category[] }>({})
-  const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([])
-  const { toast } = useToast()
-  
-  const featuredImageRef = useRef<HTMLInputElement>(null)
-  const featuredArticleImageRef = useRef<HTMLInputElement>(null)
-  
-  const [article, setArticle] = useState<Article>(defaultArticle)
+  const [activeTab, setActiveTab] = useState("editor");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [groupedCategories, setGroupedCategories] = useState<{
+    [key: string]: Category[];
+  }>({});
+  const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>(
+    []
+  );
+  const { toast } = useToast();
+
+  const featuredImageRef = useRef<HTMLInputElement>(null);
+  const featuredArticleImageRef = useRef<HTMLInputElement>(null);
+
+  const [article, setArticle] = useState<Article>(defaultArticle);
 
   // Group categories by parent category
   const groupCategories = (categories: Category[]) => {
-    const grouped: { [key: string]: Category[] } = {}
-    
-    const parentCategories = categories.filter(cat => !cat.parentCategoryName)
-    
-    categories.forEach(category => {
+    const grouped: { [key: string]: Category[] } = {};
+
+    const parentCategories = categories.filter(
+      (cat) => !cat.parentCategoryName
+    );
+
+    categories.forEach((category) => {
       if (category.parentCategoryName) {
         if (!grouped[category.parentCategoryName]) {
-          grouped[category.parentCategoryName] = []
+          grouped[category.parentCategoryName] = [];
         }
-        grouped[category.parentCategoryName].push(category)
+        grouped[category.parentCategoryName].push(category);
       }
-    })
-    
-    parentCategories.forEach(parent => {
+    });
+
+    parentCategories.forEach((parent) => {
       if (!grouped[parent.name]) {
-        grouped[parent.name] = []
+        grouped[parent.name] = [];
       }
-      grouped[parent.name].unshift(parent)
-    })
-    
-    return grouped
-  }
+      grouped[parent.name].unshift(parent);
+    });
+
+    return grouped;
+  };
 
   // Fetch categories and article data if editing
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/categories')
+        const response = await fetch("/api/categories");
         if (response.ok) {
-          const data = await response.json()
-          const categoriesData = data.categories || []
-          setCategories(categoriesData)
-          setGroupedCategories(groupCategories(categoriesData))
+          const data = await response.json();
+          const categoriesData = data.categories || [];
+          setCategories(categoriesData);
+          setGroupedCategories(groupCategories(categoriesData));
         } else {
-          toast("Error", "Failed to fetch categories", "destructive")
-          setCategories([])
-          setGroupedCategories({})
+          toast("Error", "Failed to fetch categories", "destructive");
+          setCategories([]);
+          setGroupedCategories({});
         }
       } catch (error) {
-        console.error("Failed to fetch categories:", error)
-        toast("Error", "Failed to fetch categories", "destructive")
-        setCategories([])
-        setGroupedCategories({})
+        console.error("Failed to fetch categories:", error);
+        toast("Error", "Failed to fetch categories", "destructive");
+        setCategories([]);
+        setGroupedCategories({});
       }
-    }
-    
+    };
+
     const fetchArticle = async () => {
-      if (!articleId) return
-      
+      if (!articleId) return;
+
       try {
-        setIsLoading(true)
-        const response = await fetch(`/api/news/${articleId}`)
+        setIsLoading(true);
+        const response = await fetch(`/api/news/${articleId}`);
         if (response.ok) {
-          const data = await response.json()
-          const articleData = data.data || data.article
-          
+          const data = await response.json();
+          const articleData = data.data || data.article;
+
           // Debug log
-          console.log("Fetched article data:", articleData)
-          console.log("mediaUrls:", articleData.mediaUrls)
-          console.log("cloudinaryImages:", articleData.cloudinaryImages)
-          console.log("category:", articleData.category)
-          
+          console.log("Fetched article data:", articleData);
+          console.log("mediaUrls:", articleData.mediaUrls);
+          console.log("cloudinaryImages:", articleData.cloudinaryImages);
+          console.log("category:", articleData.category);
+
           // Safely extract data with defaults
           const articleWithDefaults: Article = {
             title: articleData.title || "",
@@ -247,130 +283,161 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
             categoryId: articleData.category?._id || articleData.category || "",
             featuredImage: articleData.featuredImage || "",
             featuredArticleImage: articleData.featuredArticleImage || "",
-            mediaUrls: Array.isArray(articleData.mediaUrls) ? articleData.mediaUrls : [],
-            cloudinaryImages: Array.isArray(articleData.cloudinaryImages) ? articleData.cloudinaryImages : [],
+            mediaUrls: Array.isArray(articleData.mediaUrls)
+              ? articleData.mediaUrls
+              : [],
+            cloudinaryImages: Array.isArray(articleData.cloudinaryImages)
+              ? articleData.cloudinaryImages
+              : [],
             sourcePersonName: articleData.sourcePersonName || "",
             sourcePersonNameHi: articleData.sourcePersonNameHi || "",
-            sourcePersonSocial: articleData.sourcePersonSocial || defaultSourcePersonSocial,
+            sourcePersonSocial:
+              articleData.sourcePersonSocial || defaultSourcePersonSocial,
             layoutConfig: articleData.layoutConfig || defaultLayoutConfig,
             status: articleData.status || "draft",
             seoTitle: articleData.seoTitle || "",
             seoDescription: articleData.seoDescription || "",
-            seoKeywords: Array.isArray(articleData.seoKeywords) ? articleData.seoKeywords : [],
+            seoKeywords: Array.isArray(articleData.seoKeywords)
+              ? articleData.seoKeywords
+              : [],
             tags: Array.isArray(articleData.tags) ? articleData.tags : [],
             isBreaking: articleData.isBreaking || false,
             isFeatured: articleData.isFeatured || false,
-            scheduledAt: articleData.scheduledAt ? new Date(articleData.scheduledAt).toISOString().slice(0, 16) : ""
-          }
-          
-          console.log("Processed article:", articleWithDefaults)
-          
-          setArticle(articleWithDefaults)
-          setCloudinaryImages(Array.isArray(articleData.cloudinaryImages) ? articleData.cloudinaryImages : [])
+            scheduledAt: articleData.scheduledAt
+              ? new Date(articleData.scheduledAt).toISOString().slice(0, 16)
+              : "",
+          };
+
+          console.log("Processed article:", articleWithDefaults);
+
+          setArticle(articleWithDefaults);
+          setCloudinaryImages(
+            Array.isArray(articleData.cloudinaryImages)
+              ? articleData.cloudinaryImages
+              : []
+          );
         } else {
-          toast("Error", "Failed to fetch article data", "destructive")
+          toast("Error", "Failed to fetch article data", "destructive");
         }
       } catch (error) {
-        console.error("Failed to fetch article:", error)
-        toast("Error", "Failed to fetch article data", "destructive")
+        console.error("Failed to fetch article:", error);
+        toast("Error", "Failed to fetch article data", "destructive");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-    
-    fetchCategories()
+    };
+
+    fetchCategories();
     if (articleId) {
-      fetchArticle()
+      fetchArticle();
     }
-  }, [articleId])
-  
-  const handleCloudinaryUpload = async (file: File, type: 'featured' | 'featuredArticle' | 'general') => {
+  }, [articleId]);
+
+  const handleCloudinaryUpload = async (
+    file: File,
+    type: "featured" | "featuredArticle" | "general"
+  ) => {
     try {
-      setIsUploading(true)
-      const { url, publicId } = await uploadToCloudinary(file)
-      
+      setIsUploading(true);
+      const { url, publicId } = await uploadToCloudinary(file);
+
       const imageData = {
         url,
         publicId,
-        isFeaturedImage: type === 'featured',
-        isFeaturedArticleImage: type === 'featuredArticle'
-      }
-      
+        isFeaturedImage: type === "featured",
+        isFeaturedArticleImage: type === "featuredArticle",
+      };
+
       // Add to cloudinary images array
-      setCloudinaryImages(prev => [...prev, imageData])
-      
+      setCloudinaryImages((prev) => [...prev, imageData]);
+
       // Update article state based on type
-      if (type === 'featured') {
-        setArticle(prev => ({ ...prev, featuredImage: url }))
-      } else if (type === 'featuredArticle') {
-        setArticle(prev => ({ ...prev, featuredArticleImage: url }))
+      if (type === "featured") {
+        setArticle((prev) => ({ ...prev, featuredImage: url }));
+      } else if (type === "featuredArticle") {
+        setArticle((prev) => ({ ...prev, featuredArticleImage: url }));
       } else {
         // Add to mediaUrls for general uploads
-        setArticle(prev => ({ 
-          ...prev, 
+        setArticle((prev) => ({
+          ...prev,
           mediaUrls: [...(prev.mediaUrls || []), url],
-          cloudinaryImages: [...(prev.cloudinaryImages || []), imageData]
-        }))
+          cloudinaryImages: [...(prev.cloudinaryImages || []), imageData],
+        }));
       }
-      
-      toast("Success", "Image uploaded successfully")
-      return url
+
+      toast("Success", "Image uploaded successfully");
+      return url;
     } catch (error) {
-      console.error("Upload error:", error)
-      toast("Error", "Failed to upload image", "destructive")
-      throw error
+      console.error("Upload error:", error);
+      toast("Error", "Failed to upload image", "destructive");
+      throw error;
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
-  
-  const handleDeleteCloudinaryImage = async (publicId: string, imageUrl: string) => {
+  };
+
+  const handleDeleteCloudinaryImage = async (
+    publicId: string,
+    imageUrl: string
+  ) => {
     try {
-      await deleteFromCloudinary(publicId)
-      
+      await deleteFromCloudinary(publicId);
+
       // Remove from cloudinary images
-      setCloudinaryImages(prev => prev.filter(img => img.publicId !== publicId))
-      
+      setCloudinaryImages((prev) =>
+        prev.filter((img) => img.publicId !== publicId)
+      );
+
       // Remove from article state
-      setArticle(prev => ({
+      setArticle((prev) => ({
         ...prev,
-        cloudinaryImages: (prev.cloudinaryImages || []).filter(img => img.publicId !== publicId),
-        mediaUrls: (prev.mediaUrls || []).filter(url => url !== imageUrl),
-        featuredImage: prev.featuredImage === imageUrl ? "" : prev.featuredImage,
-        featuredArticleImage: prev.featuredArticleImage === imageUrl ? "" : prev.featuredArticleImage
-      }))
-      
-      toast("Success", "Image deleted successfully")
+        cloudinaryImages: (prev.cloudinaryImages || []).filter(
+          (img) => img.publicId !== publicId
+        ),
+        mediaUrls: (prev.mediaUrls || []).filter((url) => url !== imageUrl),
+        featuredImage:
+          prev.featuredImage === imageUrl ? "" : prev.featuredImage,
+        featuredArticleImage:
+          prev.featuredArticleImage === imageUrl
+            ? ""
+            : prev.featuredArticleImage,
+      }));
+
+      toast("Success", "Image deleted successfully");
     } catch (error) {
-      console.error("Delete error:", error)
-      toast("Error", "Failed to delete image", "destructive")
+      console.error("Delete error:", error);
+      toast("Error", "Failed to delete image", "destructive");
     }
-  }
-  
-  const handleFeaturedImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    await handleCloudinaryUpload(file, 'featured')
+  };
+
+  const handleFeaturedImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    await handleCloudinaryUpload(file, "featured");
     if (featuredImageRef.current) {
-      featuredImageRef.current.value = ""
+      featuredImageRef.current.value = "";
     }
-  }
-  
-  const handleFeaturedArticleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    await handleCloudinaryUpload(file, 'featuredArticle')
+  };
+
+  const handleFeaturedArticleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    await handleCloudinaryUpload(file, "featuredArticle");
     if (featuredArticleImageRef.current) {
-      featuredArticleImageRef.current.value = ""
+      featuredArticleImageRef.current.value = "";
     }
-  }
-  
+  };
+
   const handleSave = async () => {
     try {
-      setIsLoading(true)
-      
+      setIsLoading(true);
+
       // Prepare data for API
       const articleData = {
         title: article.title,
@@ -383,12 +450,15 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         excerptHi: article.excerptHi || "",
         category: article.categoryId,
         featuredImage: article.featuredImage,
-        featuredArticleImage: article.isFeatured ? article.featuredArticleImage : "",
+        featuredArticleImage: article.isFeatured
+          ? article.featuredArticleImage
+          : "",
         mediaUrls: article.mediaUrls || [],
         cloudinaryImages: article.cloudinaryImages || [],
         sourcePersonName: article.sourcePersonName,
         sourcePersonNameHi: article.sourcePersonNameHi,
-        sourcePersonSocial: article.sourcePersonSocial || defaultSourcePersonSocial,
+        sourcePersonSocial:
+          article.sourcePersonSocial || defaultSourcePersonSocial,
         layoutConfig: article.layoutConfig || defaultLayoutConfig,
         status: "draft",
         tags: article.tags || [],
@@ -397,48 +467,55 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         seoTitle: article.seoTitle || "",
         seoDescription: article.seoDescription || "",
         seoKeywords: article.seoKeywords || [],
-        scheduledAt: article.scheduledAt || ""
-      }
+        scheduledAt: article.scheduledAt || "",
+      };
 
-      console.log("Saving article data:", articleData)
+      console.log("Saving article data:", articleData);
 
-      const url = articleId ? `/api/news/${articleId}` : '/api/news'
-      const method = articleId ? 'PATCH' : 'POST'
-      
+      const url = articleId ? `/api/news/${articleId}` : "/api/news";
+      const method = articleId ? "PATCH" : "POST";
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('admin-token') || ''}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            localStorage.getItem("token") ||
+            localStorage.getItem("admin-token") ||
+            ""
+          }`,
         },
-        body: JSON.stringify(articleData)
-      })
+        body: JSON.stringify(articleData),
+      });
 
-      const data = await response.json()
-      console.log("Save response:", data)
+      const data = await response.json();
+      console.log("Save response:", data);
 
       if (response.ok) {
-        toast("Success", articleId ? "Article updated successfully" : "Article saved as draft")
-        
+        toast(
+          "Success",
+          articleId ? "Article updated successfully" : "Article saved as draft"
+        );
+
         if (!articleId && data.data?.articleId) {
-          window.location.href = `/admin/articles/${data.data.articleId}/edit`
+          window.location.href = `/admin/articles/${data.data.articleId}/edit`;
         }
       } else {
-        throw new Error(data.message || "Failed to save article")
+        throw new Error(data.message || "Failed to save article");
       }
     } catch (error: any) {
-      console.error("Error saving article:", error)
-      toast("Error", error.message || "Failed to save article", "destructive")
+      console.error("Error saving article:", error);
+      toast("Error", error.message || "Failed to save article", "destructive");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-  
+  };
+
   const handlePublish = async () => {
     try {
-      console.log("Publishing article...", article)
-      setIsLoading(true)
-      
+      console.log("Publishing article...", article);
+      setIsLoading(true);
+
       const articleData = {
         title: article.title,
         titleHi: article.titleHi,
@@ -450,12 +527,15 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         excerptHi: article.excerptHi || "",
         category: article.categoryId,
         featuredImage: article.featuredImage,
-        featuredArticleImage: article.isFeatured ? article.featuredArticleImage : "",
+        featuredArticleImage: article.isFeatured
+          ? article.featuredArticleImage
+          : "",
         mediaUrls: article.mediaUrls || [],
         cloudinaryImages: article.cloudinaryImages || [],
         sourcePersonName: article.sourcePersonName,
         sourcePersonNameHi: article.sourcePersonNameHi,
-        sourcePersonSocial: article.sourcePersonSocial || defaultSourcePersonSocial,
+        sourcePersonSocial:
+          article.sourcePersonSocial || defaultSourcePersonSocial,
         layoutConfig: article.layoutConfig || defaultLayoutConfig,
         status: "published",
         tags: article.tags || [],
@@ -464,69 +544,77 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         seoTitle: article.seoTitle || "",
         seoDescription: article.seoDescription || "",
         seoKeywords: article.seoKeywords || [],
-        scheduledAt: article.scheduledAt || ""
-      }
+        scheduledAt: article.scheduledAt || "",
+      };
 
-      console.log("Publishing article data:", articleData)
+      console.log("Publishing article data:", articleData);
 
-      const url = articleId ? `/api/news/${articleId}` : '/api/news'
-      const method = articleId ? 'PATCH' : 'POST'
-      
+      const url = articleId ? `/api/news/${articleId}` : "/api/news";
+      const method = articleId ? "PATCH" : "POST";
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('admin-token') || localStorage.getItem('token') || ''}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            localStorage.getItem("admin-token") ||
+            localStorage.getItem("token") ||
+            ""
+          }`,
         },
-        body: JSON.stringify(articleData)
-      })
+        body: JSON.stringify(articleData),
+      });
 
-      console.log("Publish response:", response)
+      console.log("Publish response:", response);
 
-      const data = await response.json()
-      console.log("Publish response data:", data)
+      const data = await response.json();
+      console.log("Publish response data:", data);
 
       if (response.ok) {
-        setArticle(prev => ({ ...prev, status: "published" }))
-        toast("Success", "Article published successfully")
+        setArticle((prev) => ({ ...prev, status: "published" }));
+        toast("Success", "Article published successfully");
       } else {
-        throw new Error(data.message || "Failed to publish article")
+        throw new Error(data.message || "Failed to publish article");
       }
     } catch (error: any) {
-      console.error("Error publishing article:", error)
-      toast("Error", error.message || "Failed to publish article", "destructive")
+      console.error("Error publishing article:", error);
+      toast(
+        "Error",
+        error.message || "Failed to publish article",
+        "destructive"
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-  
+  };
+
   const handleMediaUpload = async (file: File) => {
-    const url = await handleCloudinaryUpload(file, 'general')
-    return url
-  }
-  
+    const url = await handleCloudinaryUpload(file, "general");
+    return url;
+  };
+
   const removeMedia = (index: number, url: string) => {
-    const cloudinaryImage = cloudinaryImages.find(img => img.url === url)
-    
+    const cloudinaryImage = cloudinaryImages.find((img) => img.url === url);
+
     if (cloudinaryImage) {
-      handleDeleteCloudinaryImage(cloudinaryImage.publicId, url)
+      handleDeleteCloudinaryImage(cloudinaryImage.publicId, url);
     } else {
       setArticle((prev) => ({
         ...prev,
         mediaUrls: (prev.mediaUrls || []).filter((_, i) => i !== index),
-      }))
+      }));
     }
-  }
-  
+  };
+
   if (isLoading && articleId) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
         <span className="ml-2">Loading article...</span>
       </div>
-    )
+    );
   }
-  
+
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -543,7 +631,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
               <Card>
                 <CardHeader>
                   <CardTitle>Article Content</CardTitle>
-                  <CardDescription>Write your article content in English and Hindi</CardDescription>
+                  <CardDescription>
+                    Write your article content in English and Hindi
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
@@ -553,7 +643,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         id="title"
                         placeholder="Enter article title..."
                         value={article.title}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, title: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            title: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -562,7 +657,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         id="titleHi"
                         placeholder="लेख का शीर्षक दर्ज करें..."
                         value={article.titleHi}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, titleHi: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            titleHi: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -574,7 +674,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         id="subtitle"
                         placeholder="Enter subtitle..."
                         value={article.subtitle}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, subtitle: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            subtitle: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -583,7 +688,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         id="subtitleHi"
                         placeholder="उपशीर्षक दर्ज करें..."
                         value={article.subtitleHi}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, subtitleHi: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            subtitleHi: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -592,7 +702,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     <Label>Content (English)</Label>
                     <RichTextEditor
                       content={article.content}
-                      onChange={(content) => setArticle((prev) => ({ ...prev, content }))}
+                      onChange={(content) =>
+                        setArticle((prev) => ({ ...prev, content }))
+                      }
                       placeholder="Write your article content here..."
                     />
                   </div>
@@ -601,7 +713,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     <Label>Content (Hindi)</Label>
                     <RichTextEditor
                       content={article.contentHi}
-                      onChange={(content) => setArticle((prev) => ({ ...prev, contentHi: content }))}
+                      onChange={(content) =>
+                        setArticle((prev) => ({ ...prev, contentHi: content }))
+                      }
                       placeholder="यहाँ अपना लेख लिखें..."
                     />
                   </div>
@@ -615,7 +729,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     <ImageIcon className="h-5 w-5" />
                     <span>Media</span>
                   </CardTitle>
-                  <CardDescription>Upload images and videos for your article</CardDescription>
+                  <CardDescription>
+                    Upload images and videos for your article
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-4">
@@ -623,7 +739,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => document.getElementById('media-upload')?.click()}
+                        onClick={() =>
+                          document.getElementById("media-upload")?.click()
+                        }
                         disabled={isUploading}
                       >
                         {isUploading ? (
@@ -639,17 +757,18 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         accept="image/*,video/*"
                         className="hidden"
                         onChange={async (e) => {
-                          const file = e.target.files?.[0]
+                          const file = e.target.files?.[0];
                           if (file) {
-                            await handleMediaUpload(file)
-                            e.target.value = ""
+                            await handleMediaUpload(file);
+                            e.target.value = "";
                           }
                         }}
                       />
                     </div>
-                    
+
                     <div className="text-sm text-muted-foreground">
-                      Upload images/videos to Cloudinary. They will be stored securely and optimized.
+                      Upload images/videos to Cloudinary. They will be stored
+                      securely and optimized.
                     </div>
                   </div>
 
@@ -686,15 +805,19 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center space-x-2">
-                    <Badge variant={article.status === "published" ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        article.status === "published" ? "default" : "secondary"
+                      }
+                    >
                       {article.status}
                     </Badge>
                   </div>
 
                   <div className="flex flex-col space-y-2">
-                    <Button 
-                      onClick={handleSave} 
-                      variant="outline" 
+                    <Button
+                      onClick={handleSave}
+                      variant="outline"
                       className="w-full bg-transparent"
                       disabled={isLoading || isUploading}
                     >
@@ -705,17 +828,17 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       )}
                       Save Draft
                     </Button>
-                    <Button 
-                      onClick={() => setActiveTab("preview")} 
-                      variant="outline" 
+                    <Button
+                      onClick={() => setActiveTab("preview")}
+                      variant="outline"
                       className="w-full"
                       disabled={isLoading || isUploading}
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       Preview
                     </Button>
-                    <Button 
-                      onClick={handlePublish} 
+                    <Button
+                      onClick={handlePublish}
                       className="w-full"
                       disabled={isLoading || isUploading}
                     >
@@ -764,7 +887,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           Main article image
                         </span>
                       </div>
-                      
+
                       {article.featuredImage && (
                         <div className="relative mt-2">
                           <img
@@ -778,15 +901,18 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                             className="absolute top-2 right-2"
                             onClick={() => {
                               const cloudinaryImage = cloudinaryImages.find(
-                                img => img.url === article.featuredImage
-                              )
+                                (img) => img.url === article.featuredImage
+                              );
                               if (cloudinaryImage) {
                                 handleDeleteCloudinaryImage(
-                                  cloudinaryImage.publicId, 
+                                  cloudinaryImage.publicId,
                                   article.featuredImage
-                                )
+                                );
                               } else {
-                                setArticle(prev => ({ ...prev, featuredImage: "" }))
+                                setArticle((prev) => ({
+                                  ...prev,
+                                  featuredImage: "",
+                                }));
                               }
                             }}
                           >
@@ -801,24 +927,33 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     <Label htmlFor="category">Category</Label>
                     <Select
                       value={article.categoryId}
-                      onValueChange={(value) => setArticle((prev) => ({ ...prev, categoryId: value }))}
+                      onValueChange={(value) =>
+                        setArticle((prev) => ({ ...prev, categoryId: value }))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(groupedCategories).map(([parentName, categoryGroup]) => (
-                          <div key={parentName}>
-                            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                              {parentName}
+                        {Object.entries(groupedCategories).map(
+                          ([parentName, categoryGroup]) => (
+                            <div key={parentName}>
+                              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                {parentName}
+                              </div>
+                              {categoryGroup.map((category) => (
+                                <SelectItem
+                                  key={category._id}
+                                  value={category._id}
+                                >
+                                  {category.parentCategoryName
+                                    ? `- ${category.name}`
+                                    : category.name}
+                                </SelectItem>
+                              ))}
                             </div>
-                            {categoryGroup.map((category) => (
-                              <SelectItem key={category._id} value={category._id}>
-                                {category.parentCategoryName ? `- ${category.name}` : category.name}
-                              </SelectItem>
-                            ))}
-                          </div>
-                        ))}
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -831,7 +966,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         placeholder="Brief summary..."
                         rows={3}
                         value={article.excerpt}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, excerpt: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            excerpt: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -841,7 +981,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         placeholder="संक्षिप्त सारांश..."
                         rows={3}
                         value={article.excerptHi}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, excerptHi: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            excerptHi: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -855,21 +1000,35 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="sourcePerson">Source Person Name (English)</Label>
+                      <Label htmlFor="sourcePerson">
+                        Source Person Name (English)
+                      </Label>
                       <Input
                         id="sourcePerson"
                         placeholder="Name of news source..."
                         value={article.sourcePersonName}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, sourcePersonName: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            sourcePersonName: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="sourcePersonHi">Source Person Name (Hindi)</Label>
+                      <Label htmlFor="sourcePersonHi">
+                        Source Person Name (Hindi)
+                      </Label>
                       <Input
                         id="sourcePersonHi"
                         placeholder="समाचार स्रोत का नाम..."
                         value={article.sourcePersonNameHi}
-                        onChange={(e) => setArticle((prev) => ({ ...prev, sourcePersonNameHi: e.target.value }))}
+                        onChange={(e) =>
+                          setArticle((prev) => ({
+                            ...prev,
+                            sourcePersonNameHi: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -883,9 +1042,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         onChange={(e) =>
                           setArticle((prev) => ({
                             ...prev,
-                            sourcePersonSocial: { 
-                              ...prev.sourcePersonSocial, 
-                              twitter: e.target.value 
+                            sourcePersonSocial: {
+                              ...prev.sourcePersonSocial,
+                              twitter: e.target.value,
                             },
                           }))
                         }
@@ -896,9 +1055,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         onChange={(e) =>
                           setArticle((prev) => ({
                             ...prev,
-                            sourcePersonSocial: { 
-                              ...prev.sourcePersonSocial, 
-                              facebook: e.target.value 
+                            sourcePersonSocial: {
+                              ...prev.sourcePersonSocial,
+                              facebook: e.target.value,
                             },
                           }))
                         }
@@ -909,9 +1068,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         onChange={(e) =>
                           setArticle((prev) => ({
                             ...prev,
-                            sourcePersonSocial: { 
-                              ...prev.sourcePersonSocial, 
-                              instagram: e.target.value 
+                            sourcePersonSocial: {
+                              ...prev.sourcePersonSocial,
+                              instagram: e.target.value,
                             },
                           }))
                         }
@@ -922,9 +1081,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         onChange={(e) =>
                           setArticle((prev) => ({
                             ...prev,
-                            sourcePersonSocial: { 
-                              ...prev.sourcePersonSocial, 
-                              linkedin: e.target.value 
+                            sourcePersonSocial: {
+                              ...prev.sourcePersonSocial,
+                              linkedin: e.target.value,
                             },
                           }))
                         }
@@ -945,7 +1104,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
           <Card>
             <CardHeader>
               <CardTitle>Layout Settings</CardTitle>
-              <CardDescription>Customize how your article will appear to readers</CardDescription>
+              <CardDescription>
+                Customize how your article will appear to readers
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -957,9 +1118,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     onCheckedChange={(checked) =>
                       setArticle((prev) => ({
                         ...prev,
-                        layoutConfig: { 
-                          ...prev.layoutConfig, 
-                          showAuthor: checked 
+                        layoutConfig: {
+                          ...prev.layoutConfig,
+                          showAuthor: checked,
                         },
                       }))
                     }
@@ -974,9 +1135,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     onCheckedChange={(checked) =>
                       setArticle((prev) => ({
                         ...prev,
-                        layoutConfig: { 
-                          ...prev.layoutConfig, 
-                          showDate: checked 
+                        layoutConfig: {
+                          ...prev.layoutConfig,
+                          showDate: checked,
                         },
                       }))
                     }
@@ -991,9 +1152,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     onCheckedChange={(checked) =>
                       setArticle((prev) => ({
                         ...prev,
-                        layoutConfig: { 
-                          ...prev.layoutConfig, 
-                          showCategory: checked 
+                        layoutConfig: {
+                          ...prev.layoutConfig,
+                          showCategory: checked,
                         },
                       }))
                     }
@@ -1008,15 +1169,15 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     onCheckedChange={(checked) =>
                       setArticle((prev) => ({
                         ...prev,
-                        layoutConfig: { 
-                          ...prev.layoutConfig, 
-                          showSocialShare: checked 
+                        layoutConfig: {
+                          ...prev.layoutConfig,
+                          showSocialShare: checked,
                         },
                       }))
                     }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <Label htmlFor="isBreaking">Breaking News</Label>
                   <Switch
@@ -1030,7 +1191,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <Label htmlFor="isFeatured">Featured Article</Label>
                   <Switch
@@ -1050,8 +1211,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
               {article.isFeatured && (
                 <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="featuredArticleImage">Featured Article Image</Label>
-                    <span className="text-xs text-muted-foreground">Special image for featured articles</span>
+                    <Label htmlFor="featuredArticleImage">
+                      Featured Article Image
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      Special image for featured articles
+                    </span>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
@@ -1077,7 +1242,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         onChange={handleFeaturedArticleImageUpload}
                       />
                     </div>
-                    
+
                     {article.featuredArticleImage && (
                       <div className="relative mt-2">
                         <img
@@ -1091,15 +1256,18 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           className="absolute top-2 right-2"
                           onClick={() => {
                             const cloudinaryImage = cloudinaryImages.find(
-                              img => img.url === article.featuredArticleImage
-                            )
+                              (img) => img.url === article.featuredArticleImage
+                            );
                             if (cloudinaryImage) {
                               handleDeleteCloudinaryImage(
-                                cloudinaryImage.publicId, 
+                                cloudinaryImage.publicId,
                                 article.featuredArticleImage
-                              )
+                              );
                             } else {
-                              setArticle(prev => ({ ...prev, featuredArticleImage: "" }))
+                              setArticle((prev) => ({
+                                ...prev,
+                                featuredArticleImage: "",
+                              }));
                             }
                           }}
                         >
@@ -1107,9 +1275,10 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                         </Button>
                       </div>
                     )}
-                    
+
                     <p className="text-xs text-muted-foreground">
-                      This image will be used when the article is displayed as a featured article on the homepage or featured sections.
+                      This image will be used when the article is displayed as a
+                      featured article on the homepage or featured sections.
                     </p>
                   </div>
                 </div>
@@ -1122,9 +1291,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   onValueChange={(value) =>
                     setArticle((prev) => ({
                       ...prev,
-                      layoutConfig: { 
-                        ...prev.layoutConfig, 
-                        imagePosition: value as any
+                      layoutConfig: {
+                        ...prev.layoutConfig,
+                        imagePosition: value as any,
                       },
                     }))
                   }
@@ -1148,9 +1317,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   onValueChange={(value) =>
                     setArticle((prev) => ({
                       ...prev,
-                      layoutConfig: { 
-                        ...prev.layoutConfig, 
-                        textAlign: value as any
+                      layoutConfig: {
+                        ...prev.layoutConfig,
+                        textAlign: value as any,
                       },
                     }))
                   }
@@ -1166,7 +1335,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="tags">Tags (comma separated)</Label>
                 <Input
@@ -1176,22 +1345,27 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   onChange={(e) =>
                     setArticle((prev) => ({
                       ...prev,
-                      tags: e.target.value.split(",").map(tag => tag.trim()),
+                      tags: e.target.value.split(",").map((tag) => tag.trim()),
                     }))
                   }
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="seoTitle">SEO Title</Label>
                 <Input
                   id="seoTitle"
                   placeholder="SEO Title for search engines"
                   value={article.seoTitle}
-                  onChange={(e) => setArticle((prev) => ({ ...prev, seoTitle: e.target.value }))}
+                  onChange={(e) =>
+                    setArticle((prev) => ({
+                      ...prev,
+                      seoTitle: e.target.value,
+                    }))
+                  }
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="seoDescription">SEO Description</Label>
                 <Textarea
@@ -1199,12 +1373,19 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   placeholder="SEO Description for search engines"
                   rows={3}
                   value={article.seoDescription}
-                  onChange={(e) => setArticle((prev) => ({ ...prev, seoDescription: e.target.value }))}
+                  onChange={(e) =>
+                    setArticle((prev) => ({
+                      ...prev,
+                      seoDescription: e.target.value,
+                    }))
+                  }
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="seoKeywords">SEO Keywords (comma separated)</Label>
+                <Label htmlFor="seoKeywords">
+                  SEO Keywords (comma separated)
+                </Label>
                 <Input
                   id="seoKeywords"
                   placeholder="keyword1, keyword2, keyword3"
@@ -1212,14 +1393,18 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   onChange={(e) =>
                     setArticle((prev) => ({
                       ...prev,
-                      seoKeywords: e.target.value.split(",").map(keyword => keyword.trim()),
+                      seoKeywords: e.target.value
+                        .split(",")
+                        .map((keyword) => keyword.trim()),
                     }))
                   }
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="scheduledAt">Schedule Publication (optional)</Label>
+                <Label htmlFor="scheduledAt">
+                  Schedule Publication (optional)
+                </Label>
                 <Input
                   id="scheduledAt"
                   type="datetime-local"
@@ -1237,5 +1422,5 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

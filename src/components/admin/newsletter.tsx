@@ -105,6 +105,11 @@ interface CampaignsResponse {
   pagination: Pagination;
 }
 
+interface SubscribersResponse {
+  subscribers: Subscriber[];
+  pagination: Pagination;
+}
+
 interface EmailForm {
   subject: string;
   content: string;
@@ -161,18 +166,24 @@ export default function NewsletterPage() {
   });
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
+  const [subscriberPagination, setSubscriberPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 1,
+  });
+  const [campaignPagination, setCampaignPagination] = useState<Pagination>({
     total: 0,
     page: 1,
     limit: 10,
     pages: 1,
   });
   const [loading, setLoading] = useState(false);
+  const [subscriberLoading, setSubscriberLoading] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
   const API_BASE_URL = "http://localhost:3000/api/admin/newsletter";
-  const AUTH_TOKEN =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGJjOGFkNzE0ZjA1ZTlkYmM1YTQ1ZjQiLCJlbWFpbCI6ImFyYmFhYXpraGFuYXJrMjNAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwibmFtZSI6IkFyYmF6IEtoYW4iLCJpYXQiOjE3NTgxMjY4NzMsImV4cCI6MTc1ODczMTY3M30.9WP3_AmSr9kyld6Bv9npGEWRRpPvrC3hBEe87OL5PeQ";
+  const AUTH_TOKEN = `${localStorage.getItem("admin-token")}`;
 
   // Fetch campaigns from API
   const fetchCampaigns = useCallback(
@@ -194,14 +205,43 @@ export default function NewsletterPage() {
 
         const data: CampaignsResponse = await response.json();
         setCampaigns(data.campaigns);
-        setPagination(data.pagination);
+        setCampaignPagination(data.pagination);
       } catch (error) {
         console.error("Error fetching campaigns:", error);
         toast.error("Failed to load campaigns");
-        // Fallback to mock data if API fails
-        setCampaigns(mockCampaigns);
       } finally {
         setLoading(false);
+      }
+    },
+    [AUTH_TOKEN]
+  );
+
+  // Fetch subscribers from API
+  const fetchSubscribers = useCallback(
+    async (page: number = 1, limit: number = 10) => {
+      setSubscriberLoading(true);
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/subscribers?page=${page}&limit=${limit}`,
+          {
+            headers: {
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: SubscribersResponse = await response.json();
+        setSubscribers(data.subscribers);
+        setSubscriberPagination(data.pagination);
+      } catch (error) {
+        console.error("Error fetching subscribers:", error);
+        toast.error("Failed to load subscribers");
+      } finally {
+        setSubscriberLoading(false);
       }
     },
     [AUTH_TOKEN]
@@ -225,6 +265,10 @@ export default function NewsletterPage() {
 
       const newCampaign = await response.json();
       setCampaigns([newCampaign, ...campaigns]);
+      setCampaignPagination({
+        ...campaignPagination,
+        total: campaignPagination.total + 1,
+      });
       toast.success("Campaign created successfully");
       return newCampaign;
     } catch (error) {
@@ -283,6 +327,10 @@ export default function NewsletterPage() {
       }
 
       setCampaigns(campaigns.filter((campaign) => campaign._id !== id));
+      setCampaignPagination({
+        ...campaignPagination,
+        total: campaignPagination.total - 1,
+      });
       toast.success("Campaign deleted successfully");
     } catch (error) {
       console.error("Error deleting campaign:", error);
@@ -325,108 +373,96 @@ export default function NewsletterPage() {
     }
   };
 
-  // Mock data for demonstration
-  const mockSubscribers: Subscriber[] = [
-    {
-      _id: "68ced7d5c168bb81dc33fa86",
-      email: "itachimangenkio@gmail.com",
-      name: "Test User",
-      language: "hi",
-      isActive: true,
-      subscribedAt: "2025-09-20T16:35:33.822Z",
-      isVerified: true,
-      source: "website",
-    },
-    {
-      _id: "68c0574289c6563b1d6f5e5f",
-      email: "testuser@example.com",
-      name: "Test User",
-      language: "hi",
-      isActive: true,
-      subscribedAt: "2025-09-09T16:35:14.162Z",
-      isVerified: false,
-      source: "social",
-    },
-  ];
+  // Add a new subscriber
+  const addSubscriber = async (subscriberData: SubscriberForm) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscribers`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+        body: JSON.stringify(subscriberData),
+      });
 
-  const mockCampaigns: Campaign[] = [
-    {
-      _id: "68bfcbc1d481afbc111f8c46",
-      subject: "Monthly New Updated Campaigns",
-      content: "Here's what happened this month...",
-      htmlContent: "<p>Here's what happened this week...</p>",
-      language: "en",
-      status: "draft",
-      scheduledAt: "2025-09-09T10:00:00.000Z",
-      recipients: 0,
-      opens: 0,
-      clicks: 0,
-      createdBy: "68bc8ad714f05e9dbc5a45f4",
-      createdAt: "2025-09-09T06:40:01.470Z",
-    },
-    {
-      _id: "68bf23b8900d9b8d8989c38e",
-      subject: "Weekly Update",
-      content: "Here's what happened this week...",
-      htmlContent: "<p>Here's what happened this week...</p>",
-      language: "en",
-      status: "sent",
-      scheduledAt: "2025-09-09T10:00:00.000Z",
-      recipients: 12500,
-      opens: 8560,
-      clicks: 1600,
-      createdBy: "68bc8ad714f05e9dbc5a45f4",
-      createdAt: "2025-09-08T18:43:04.275Z",
-      sentAt: "2025-09-08T19:00:00.000Z",
-    },
-  ];
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-  const newsletterStats: NewsletterStats[] = [
-    {
-      title: "Total Subscribers",
-      value: mockSubscribers.filter((s) => s.isActive).length.toString(),
-      change: "+2",
-      trend: "up",
-      icon: Users,
-    },
-    {
-      title: "Active Campaigns",
-      value: campaigns
-        .filter((c) => c.status === "sent" || c.status === "scheduled")
-        .length.toString(),
-      change: "+1",
-      trend: "up",
-      icon: Mail,
-    },
-    {
-      title: "Open Rate",
-      value:
-        campaigns.length > 0
-          ? `${(
-              (campaigns.reduce((sum, c) => sum + (c.opens || 0), 0) /
-                campaigns.reduce((sum, c) => sum + (c.recipients || 0), 1)) *
-              100
-            ).toFixed(1)}%`
-          : "0%",
-      change: "+2.3%",
-      trend: "up",
-      icon: Eye,
-    },
-    {
-      title: "Click Rate",
-      value:
-        campaigns.length > 0
-          ? `${(
-              (campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0) /
-                campaigns.reduce((sum, c) => sum + (c.recipients || 0), 1)) *
-              100
-            ).toFixed(1)}%`
-          : "0%",
-      change: "+1.1%",
-      trend: "up",
-      icon: TrendingUp,
-    },
-  ];
+      const newSubscriber = await response.json();
+      setSubscribers([newSubscriber, ...subscribers]);
+      setSubscriberPagination({
+        ...subscriberPagination,
+        total: subscriberPagination.total + 1,
+      });
+      toast.success("Subscriber added successfully");
+      return newSubscriber;
+    } catch (error) {
+      console.error("Error adding subscriber:", error);
+      toast.error("Failed to add subscriber");
+      throw error;
+    }
+  };
+
+  // Update subscriber status
+  const updateSubscriberStatus = async (id: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscribers/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+        body: JSON.stringify({ isActive }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const updatedSubscriber = await response.json();
+      setSubscribers(
+        subscribers.map((subscriber) =>
+          subscriber._id === id ? updatedSubscriber : subscriber
+        )
+      );
+      toast.success(
+        `Subscriber ${isActive ? "activated" : "deactivated"} successfully`
+      );
+      return updatedSubscriber;
+    } catch (error) {
+      console.error("Error updating subscriber:", error);
+      toast.error("Failed to update subscriber");
+      throw error;
+    }
+  };
+
+  // Delete a subscriber
+  const deleteSubscriber = async (id: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscribers/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setSubscribers(subscribers.filter((subscriber) => subscriber._id !== id));
+      setSubscriberPagination({
+        ...subscriberPagination,
+        total: subscriberPagination.total - 1,
+      });
+      toast.success("Subscriber deleted successfully");
+    } catch (error) {
+      console.error("Error deleting subscriber:", error);
+      toast.error("Failed to delete subscriber");
+      throw error;
+    }
+  };
 
   const templates: Template[] = [
     {
@@ -631,9 +667,8 @@ The Editorial Team`,
 
   useEffect(() => {
     fetchCampaigns();
-    // Load mock subscribers (replace with API call when available)
-    setSubscribers(mockSubscribers);
-  }, [fetchCampaigns]);
+    fetchSubscribers();
+  }, [fetchCampaigns, fetchSubscribers]);
 
   const handlePreviewTemplate = (template: Template) => {
     setSelectedTemplate(template);
@@ -667,11 +702,12 @@ The Editorial Team`,
         language: emailForm.language,
         status: emailForm.status,
         scheduledAt:
-          emailForm.status === "scheduled" ? emailForm.scheduledAt : undefined,
+          emailForm.status === "scheduled" && emailForm.scheduledAt
+            ? emailForm.scheduledAt
+            : undefined,
         recipients: 0,
         opens: 0,
         clicks: 0,
-        createdBy: "68bc8ad714f05e9dbc5a45f4", // This should come from auth context
       };
 
       if (editingCampaign) {
@@ -734,11 +770,35 @@ The Editorial Team`,
     }
   };
 
-  const handleAddSubscriber = () => {
-    console.log("Adding subscriber:", subscriberForm);
-    setIsSubscriberDialogOpen(false);
-    setSubscriberForm({ email: "", name: "", language: "en" });
-    toast.success("Subscriber added successfully");
+  const handleAddSubscriber = async () => {
+    try {
+      await addSubscriber(subscriberForm);
+      setIsSubscriberDialogOpen(false);
+      setSubscriberForm({ email: "", name: "", language: "en" });
+    } catch (error) {
+      console.error("Error adding subscriber:", error);
+    }
+  };
+
+  const handleToggleSubscriberStatus = async (
+    subscriberId: string,
+    currentStatus: boolean
+  ) => {
+    try {
+      await updateSubscriberStatus(subscriberId, !currentStatus);
+    } catch (error) {
+      console.error("Error toggling subscriber status:", error);
+    }
+  };
+
+  const handleDeleteSubscriber = async (subscriberId: string) => {
+    if (confirm("Are you sure you want to delete this subscriber?")) {
+      try {
+        await deleteSubscriber(subscriberId);
+      } catch (error) {
+        console.error("Error deleting subscriber:", error);
+      }
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -757,6 +817,64 @@ The Editorial Team`,
         return "destructive";
       default:
         return "outline";
+    }
+  };
+
+  // Calculate newsletter stats from real data
+  const newsletterStats: NewsletterStats[] = [
+    {
+      title: "Total Subscribers",
+      value: subscribers.filter((s) => s.isActive).length.toString(),
+      change: "+0",
+      trend: "neutral",
+      icon: Users,
+    },
+    {
+      title: "Active Campaigns",
+      value: campaigns
+        .filter((c) => c.status === "sent" || c.status === "scheduled")
+        .length.toString(),
+      change: "+0",
+      trend: "neutral",
+      icon: Mail,
+    },
+    {
+      title: "Open Rate",
+      value:
+        campaigns.length > 0
+          ? `${(
+              (campaigns.reduce((sum, c) => sum + (c.opens || 0), 0) /
+                campaigns.reduce((sum, c) => sum + (c.recipients || 0), 1)) *
+              100
+            ).toFixed(1)}%`
+          : "0%",
+      change: "+0%",
+      trend: "neutral",
+      icon: Eye,
+    },
+    {
+      title: "Click Rate",
+      value:
+        campaigns.length > 0
+          ? `${(
+              (campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0) /
+                campaigns.reduce((sum, c) => sum + (c.recipients || 0), 1)) *
+              100
+            ).toFixed(1)}%`
+          : "0%",
+      change: "+0%",
+      trend: "neutral",
+      icon: TrendingUp,
+    },
+  ];
+
+  // Format datetime-local input value
+  const formatDateTimeForInput = (dateString: string) => {
+    if (!dateString) return "";
+    try {
+      return format(new Date(dateString), "yyyy-MM-dd'T'HH:mm");
+    } catch (error) {
+      return "";
     }
   };
 
@@ -921,18 +1039,13 @@ The Editorial Team`,
                     <Input
                       id="scheduledAt"
                       type="datetime-local"
-                      value={
-                        emailForm.scheduledAt
-                          ? format(
-                              new Date(emailForm.scheduledAt),
-                              "yyyy-MM-dd'T'HH:mm"
-                            )
-                          : ""
-                      }
+                      value={formatDateTimeForInput(emailForm.scheduledAt)}
                       onChange={(e) =>
                         setEmailForm({
                           ...emailForm,
-                          scheduledAt: new Date(e.target.value).toISOString(),
+                          scheduledAt: e.target.value
+                            ? new Date(e.target.value).toISOString()
+                            : "",
                         })
                       }
                     />
@@ -1273,84 +1386,139 @@ The Editorial Team`,
 
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Subscriber</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Language</TableHead>
-                    <TableHead>Verified</TableHead>
-                    <TableHead>Subscribed</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subscribers.map((subscriber) => (
-                    <TableRow key={subscriber._id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{subscriber.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {subscriber.email}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            subscriber.isActive ? "default" : "secondary"
-                          }
-                        >
-                          {subscriber.isActive ? "active" : "inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {subscriber.language === "en" ? "English" : "Hindi"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            subscriber.isVerified ? "default" : "secondary"
-                          }
-                        >
-                          {subscriber.isVerified ? "verified" : "pending"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(subscriber.subscribedAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              {subscriber.isActive
-                                ? "Unsubscribe"
-                                : "Resubscribe"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {subscriberLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Subscriber</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Language</TableHead>
+                        <TableHead>Verified</TableHead>
+                        <TableHead>Subscribed</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscribers.map((subscriber) => (
+                        <TableRow key={subscriber._id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {subscriber.name}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {subscriber.email}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                subscriber.isActive ? "default" : "secondary"
+                              }
+                            >
+                              {subscriber.isActive ? "active" : "inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {subscriber.language === "en"
+                                ? "English"
+                                : "Hindi"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                subscriber.isVerified ? "default" : "secondary"
+                              }
+                            >
+                              {subscriber.isVerified ? "verified" : "pending"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(subscriber.subscribedAt)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleToggleSubscriberStatus(
+                                      subscriber._id,
+                                      subscriber.isActive
+                                    )
+                                  }
+                                >
+                                  {subscriber.isActive
+                                    ? "Unsubscribe"
+                                    : "Resubscribe"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() =>
+                                    handleDeleteSubscriber(subscriber._id)
+                                  }
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className="flex items-center justify-between p-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {subscribers.length} of{" "}
+                      {subscriberPagination.total} subscribers
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        disabled={subscriberPagination.page === 1}
+                        onClick={() =>
+                          fetchSubscribers(
+                            subscriberPagination.page - 1,
+                            subscriberPagination.limit
+                          )
+                        }
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={
+                          subscriberPagination.page ===
+                          subscriberPagination.pages
+                        }
+                        onClick={() =>
+                          fetchSubscribers(
+                            subscriberPagination.page + 1,
+                            subscriberPagination.limit
+                          )
+                        }
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1361,7 +1529,7 @@ The Editorial Team`,
               <CardTitle>All Campaigns</CardTitle>
               <div className="flex space-x-2">
                 <Select
-                  value={pagination.limit.toString()}
+                  value={campaignPagination.limit.toString()}
                   onValueChange={(value) => fetchCampaigns(1, parseInt(value))}
                 >
                   <SelectTrigger className="w-20">
@@ -1376,122 +1544,147 @@ The Editorial Team`,
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Recipients</TableHead>
-                    <TableHead>Open Rate</TableHead>
-                    <TableHead>Click Rate</TableHead>
-                    <TableHead>Sent Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {campaigns.map((campaign) => (
-                    <TableRow key={campaign._id}>
-                      <TableCell className="font-medium">
-                        {campaign.subject}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(campaign.status)}>
-                          {campaign.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {(campaign.recipients || 0).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        {(campaign.recipients || 0) > 0
-                          ? `${(
-                              ((campaign.opens || 0) / campaign.recipients) *
-                              100
-                            ).toFixed(1)}%`
-                          : "0%"}
-                      </TableCell>
-                      <TableCell>
-                        {(campaign.recipients || 0) > 0
-                          ? `${(
-                              ((campaign.clicks || 0) / campaign.recipients) *
-                              100
-                            ).toFixed(1)}%`
-                          : "0%"}
-                      </TableCell>
-                      <TableCell>
-                        {campaign.sentAt
-                          ? formatDate(campaign.sentAt)
-                          : "Not sent"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onClick={() => handleEditCampaign(campaign)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            {campaign.status === "draft" && (
-                              <DropdownMenuItem
-                                onClick={() => handleSendCampaign(campaign._id)}
-                              >
-                                <Send className="mr-2 h-4 w-4" />
-                                Send Now
-                              </DropdownMenuItem>
-                            )}
-                            {campaign.status === "scheduled" && (
-                              <DropdownMenuItem>
-                                <Calendar className="mr-2 h-4 w-4" />
-                                Reschedule
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteCampaign(campaign._id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing {campaigns.length} of {pagination.total} campaigns
+              {loading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                 </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    disabled={pagination.page === 1}
-                    onClick={() =>
-                      fetchCampaigns(pagination.page - 1, pagination.limit)
-                    }
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={pagination.page === pagination.pages}
-                    onClick={() =>
-                      fetchCampaigns(pagination.page + 1, pagination.limit)
-                    }
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Recipients</TableHead>
+                        <TableHead>Open Rate</TableHead>
+                        <TableHead>Click Rate</TableHead>
+                        <TableHead>Sent Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {campaigns.map((campaign) => (
+                        <TableRow key={campaign._id}>
+                          <TableCell className="font-medium">
+                            {campaign.subject}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={getStatusBadgeVariant(campaign.status)}
+                            >
+                              {campaign.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {(campaign.recipients || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {(campaign.recipients || 0) > 0
+                              ? `${(
+                                  ((campaign.opens || 0) /
+                                    campaign.recipients) *
+                                  100
+                                ).toFixed(1)}%`
+                              : "0%"}
+                          </TableCell>
+                          <TableCell>
+                            {(campaign.recipients || 0) > 0
+                              ? `${(
+                                  ((campaign.clicks || 0) /
+                                    campaign.recipients) *
+                                  100
+                                ).toFixed(1)}%`
+                              : "0%"}
+                          </TableCell>
+                          <TableCell>
+                            {campaign.sentAt
+                              ? formatDate(campaign.sentAt)
+                              : "Not sent"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                  onClick={() => handleEditCampaign(campaign)}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                {campaign.status === "draft" && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleSendCampaign(campaign._id)
+                                    }
+                                  >
+                                    <Send className="mr-2 h-4 w-4" />
+                                    Send Now
+                                  </DropdownMenuItem>
+                                )}
+                                {campaign.status === "scheduled" && (
+                                  <DropdownMenuItem>
+                                    <Calendar className="mr-2 h-4 w-4" />
+                                    Reschedule
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() =>
+                                    handleDeleteCampaign(campaign._id)
+                                  }
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {campaigns.length} of {campaignPagination.total}{" "}
+                      campaigns
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        disabled={campaignPagination.page === 1}
+                        onClick={() =>
+                          fetchCampaigns(
+                            campaignPagination.page - 1,
+                            campaignPagination.limit
+                          )
+                        }
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={
+                          campaignPagination.page === campaignPagination.pages
+                        }
+                        onClick={() =>
+                          fetchCampaigns(
+                            campaignPagination.page + 1,
+                            campaignPagination.limit
+                          )
+                        }
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

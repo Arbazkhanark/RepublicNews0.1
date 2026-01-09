@@ -1,218 +1,154 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Facebook, Twitter, Linkedin } from "lucide-react";
+import { Calendar, Eye, User, Share2 } from "lucide-react";
 
 interface ArticlePreviewProps {
   article: {
     title: string;
-    titleHi: string;
-    subtitle: string;
-    subtitleHi: string;
+    titleHi?: string;
+    subtitle?: string;
+    subtitleHi?: string;
     content: string;
-    contentHi: string;
-    featuredImage: string;
-    mediaUrls: string[];
-    sourcePersonName: string;
-    sourcePersonSocial: Record<string, string>;
-    layoutConfig: {
+    contentHi?: string;
+    excerpt?: string;
+    excerptHi?: string;
+    featuredImage?: string;
+    categoryId?: string;
+    status?: string;
+    publishedAt?: string;
+    author?: string;
+    layoutConfig?: {
       showAuthor: boolean;
       showDate: boolean;
       showCategory: boolean;
       showSocialShare: boolean;
-      imagePosition: string;
-      textAlign: string;
     };
   };
 }
 
 export function ArticlePreview({ article }: ArticlePreviewProps) {
-  const formatContent = (content: string) => {
-    // Simple markdown-like formatting
-    return content
-      .replace(
-        /### (.*)/g,
-        '<h3 class="text-xl font-semibold mb-3 mt-6">$1</h3>'
-      )
-      .replace(
-        /## (.*)/g,
-        '<h2 class="text-2xl font-semibold mb-4 mt-8">$1</h2>'
-      )
-      .replace(/# (.*)/g, '<h1 class="text-3xl font-bold mb-4 mt-8">$1</h1>')
+  // Function to convert markdown and custom HTML to display HTML
+  const convertContentToHTML = (content: string) => {
+    if (!content) return "";
+
+    // Replace custom image containers with proper HTML
+    let html = content
+      // Bold
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      // Italic
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      // Underline (HTML)
       .replace(/<u>(.*?)<\/u>/g, "<u>$1</u>")
+      // Headings
+      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold my-4">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold my-3">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold my-2">$1</h3>')
+      // Lists
+      .replace(/^- (.*$)/gm, '<li class="ml-4">$1</li>')
+      .replace(/^1\. (.*$)/gm, '<li class="ml-4">$1</li>')
+      // Blockquotes
       .replace(
-        /> (.*)/g,
-        '<blockquote class="border-l-4 border-primary pl-4 italic my-4">$1</blockquote>'
+        /^> (.*$)/gm,
+        '<blockquote class="border-l-4 border-gray-300 pl-4 my-4 italic">$1</blockquote>'
       )
-      .replace(/- (.*)/g, '<li class="ml-4">$1</li>')
+      // Links
+      .replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        '<a href="$2" class="text-blue-600 hover:underline">$1</a>'
+      )
+      // Line breaks
       .replace(/\n/g, "<br>");
+
+    return html;
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <Card>
-        <CardContent className="p-8">
-          {/* Article Header */}
-          <div className="space-y-4 mb-8">
-            {article.layoutConfig.showCategory && (
-              <Badge className="mb-2">Technology</Badge>
-            )}
-
-            <h1 className="text-4xl font-bold text-foreground leading-tight">
-              {article.title || "Article Title"}
-            </h1>
-
-            {article.subtitle && (
-              <p className="text-xl text-muted-foreground">
-                {article.subtitle}
-              </p>
-            )}
-
-            <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-              {article.layoutConfig.showAuthor && (
-                <div className="flex items-center space-x-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?key=author" />
-                    <AvatarFallback>JD</AvatarFallback>
-                  </Avatar>
-                  <span>John Doe</span>
-                </div>
-              )}
-
-              {article.layoutConfig.showDate && (
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Featured Image */}
-          {article.featuredImage && (
-            <div
-              className={`mb-8 ${
-                article.layoutConfig.imagePosition === "center"
-                  ? "text-center"
-                  : article.layoutConfig.imagePosition === "left"
-                  ? "float-left mr-6 mb-4"
-                  : article.layoutConfig.imagePosition === "right"
-                  ? "float-right ml-6 mb-4"
-                  : ""
-              }`}
-            >
-              <img
-                src={
-                  article.featuredImage ||
-                  "/placeholder.svg?height=400&width=800&query=news article featured image"
-                }
-                alt="Featured"
-                className={`rounded-lg ${
-                  article.layoutConfig.imagePosition === "left" ||
-                  article.layoutConfig.imagePosition === "right"
-                    ? "w-80"
-                    : "w-full max-h-96 object-cover"
-                }`}
-              />
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Article Preview</span>
+          <Badge
+            variant={article.status === "published" ? "default" : "secondary"}
+          >
+            {article.status || "draft"}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Article Header */}
+        <div className="space-y-4">
+          <h1 className="text-3xl font-bold">{article.title}</h1>
+          {article.subtitle && (
+            <h2 className="text-xl text-gray-600">{article.subtitle}</h2>
           )}
 
-          {/* Article Content */}
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            {article.layoutConfig?.showDate && article.publishedAt && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {new Date(article.publishedAt).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {article.layoutConfig?.showAuthor && article.author && (
+              <div className="flex items-center gap-1">
+                <User className="h-4 w-4" />
+                <span>{article.author}</span>
+              </div>
+            )}
+            {article.layoutConfig?.showSocialShare && (
+              <div className="flex items-center gap-1">
+                <Share2 className="h-4 w-4" />
+                <span>Share</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Featured Image */}
+        {article.featuredImage && (
+          <div className="relative h-64 md:h-80 overflow-hidden rounded-lg">
+            <img
+              src={article.featuredImage}
+              alt={article.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Excerpt */}
+        {article.excerpt && (
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-lg italic text-gray-700">{article.excerpt}</p>
+          </div>
+        )}
+
+        {/* Content with Images */}
+        <div className="prose prose-lg max-w-none">
           <div
-            className={`prose prose-lg max-w-none mb-8 ${
-              article.layoutConfig.textAlign === "center"
-                ? "text-center"
-                : article.layoutConfig.textAlign === "right"
-                ? "text-right"
-                : article.layoutConfig.textAlign === "justify"
-                ? "text-justify"
-                : "text-left"
-            }`}
             dangerouslySetInnerHTML={{
-              __html: formatContent(
-                article.content || "Your article content will appear here..."
-              ),
+              __html: convertContentToHTML(article.content),
             }}
           />
+        </div>
 
-          {/* Media Gallery */}
-          {article.mediaUrls.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Media</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                {article.mediaUrls.map((url, index) => (
-                  <img
-                    key={index}
-                    src={url || "/placeholder.svg"}
-                    alt={`Media ${index + 1}`}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                ))}
-              </div>
+        {/* Hindi Content */}
+        {article.contentHi && (
+          <div className="mt-8 border-t pt-8">
+            <h2 className="text-2xl font-bold mb-4">हिंदी संस्करण</h2>
+            <div className="prose prose-lg max-w-none">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: convertContentToHTML(article.contentHi),
+                }}
+              />
             </div>
-          )}
-
-          {/* Source Information */}
-          {article.sourcePersonName && (
-            <div className="border-t border-border pt-6 mb-6">
-              <h3 className="text-lg font-semibold mb-3">News Source</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{article.sourcePersonName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    News Contributor
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  {article.sourcePersonSocial.twitter && (
-                    <Button variant="outline" size="sm">
-                      <Twitter className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {article.sourcePersonSocial.facebook && (
-                    <Button variant="outline" size="sm">
-                      <Facebook className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {article.sourcePersonSocial.linkedin && (
-                    <Button variant="outline" size="sm">
-                      <Linkedin className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Social Share */}
-          {article.layoutConfig.showSocialShare && (
-            <div className="border-t border-border pt-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Share this article</h3>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Facebook className="h-4 w-4 mr-2" />
-                    Facebook
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Twitter className="h-4 w-4 mr-2" />
-                    Twitter
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Linkedin className="h-4 w-4 mr-2" />
-                    LinkedIn
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
