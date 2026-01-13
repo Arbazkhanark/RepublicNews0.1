@@ -24,6 +24,7 @@ import {
 import { useLanguage } from "@/contexts/language-context";
 import { mockData } from "@/lib/mock-data";
 import { StockManager } from "./stock-market";
+import Image from "next/image";
 
 interface StockData {
   ticker: string;
@@ -206,14 +207,22 @@ export function PublicHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center group">
             <div className="text-center transition-transform duration-300 group-hover:scale-105">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              {/* <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 REPUBLIC MIRROR
-              </h1>
-              <p className="text-sm text-red-600 font-medium">
+              </h1> */}
+              <Image
+                src="/logo.svg"
+                alt="Republic Mirror Tagline"
+                width={150}
+                height={20}
+                className="mx-auto mt-1"
+                priority
+               />
+              {/* <p className="text-sm text-red-600 font-medium">
                 {language === "hi"
                   ? "सत्य का प्रतिबिंब"
                   : "Reflection of Truth"}
-              </p>
+              </p> */}
             </div>
           </Link>
 

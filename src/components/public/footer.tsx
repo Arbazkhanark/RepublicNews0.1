@@ -9,6 +9,7 @@ import {
   MapPin,
   MessageCircleReply,
 } from "lucide-react";
+import Image from "next/image";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -19,7 +20,8 @@ export function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About Section */}
           <div>
-            <h3 className="text-xl font-bold mb-4">REPUBLIC MIRROR</h3>
+            {/* <h3 className="text-xl font-bold mb-4">REPUBLIC MIRROR</h3> */}
+            <Image src="/logo.svg" alt="Republic Mirror Logo" width={300} height={20} className="mx-auto mt-1" />
             <p className="text-gray-300 mb-4">
               Reflection of Truth - Your trusted source for accurate and
               unbiased news coverage.

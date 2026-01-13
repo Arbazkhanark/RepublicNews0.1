@@ -32,6 +32,10 @@ import {
   Star,
   Target,
   Heart,
+  Newspaper,
+  Eye,
+  Zap,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,9 +58,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PublicHeader } from "@/components/public/header";
-import { PublicFooter } from "@/components/public/footer";
-import { GoogleAdSense } from "./google-adsense";
 
 const TeamPage = () => {
   const [language, setLanguage] = useState<"en" | "hi">("en");
@@ -65,83 +66,16 @@ const TeamPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const departments = [
-    { id: "all", label: "All Departments", count: 47 },
-    { id: "editorial", label: "Editorial", count: 14 },
-    { id: "factcheck", label: "Fact-Check", count: 8 },
-    { id: "technology", label: "Technology", count: 10 },
-    { id: "research", label: "Research", count: 6 },
-    { id: "multimedia", label: "Multimedia", count: 7 },
-    { id: "operations", label: "Operations", count: 2 },
+    { id: "all", label: "All Departments", count: 2 },
+    { id: "editorial", label: "Editorial", count: 2 },
   ];
 
   const teamMembers = [
     // Leadership Team
     {
-      id: 2,
-      name: "Priya Sharma",
-      nameHi: "प्रिया शर्मा",
-      role: "Fact-Check Director",
-      roleHi: "तथ्य-जाँच निदेशक",
-      department: "factcheck",
-      experience: "12+ years",
-      education: "PhD in Media Studies, JNU",
-      expertise: [
-        "Digital Forensics",
-        "Misinformation Research",
-        "Data Verification",
-      ],
-      bio: "Leading expert in digital forensics and misinformation detection. Founded our fact-checking unit.",
-      bioHi:
-        "डिजिटल फोरेंसिक्स और गलत सूचना पहचान में अग्रणी विशेषज्ञ। हमारी तथ्य-जाँच इकाई की संस्थापक।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
-      email: "priya@republicmirror.com",
-      phone: "+91 98765 43211",
-      social: {
-        twitter: "@priyafactcheck",
-        linkedin: "priyasharma",
-        instagram: "priya_sharma",
-      },
-      achievements: [
-        "Google News Initiative Fellow",
-        "UNESCO Award",
-        "Fact-Check Pioneer",
-      ],
-      isLeadership: true,
-      joinDate: "2021-03-10",
-    },
-    {
-      id: 3,
-      name: "Arjun Singh",
-      nameHi: "अर्जुन सिंह",
-      role: "CTO & Head of Technology",
-      roleHi: "सीटीओ और तकनीकी प्रमुख",
-      department: "technology",
-      experience: "10+ years",
-      education: "MTech Computer Science, IIT Delhi",
-      expertise: ["AI/ML", "Big Data", "Cybersecurity", "Cloud Infrastructure"],
-      bio: "Builds the technology that powers our fact-checking tools and digital platforms.",
-      bioHi:
-        "हमारे तथ्य-जाँच टूल्स और डिजिटल प्लेटफॉर्म को शक्ति प्रदान करने वाली तकनीक का निर्माण करते हैं।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun",
-      email: "arjun@republicmirror.com",
-      phone: "+91 98765 43212",
-      social: {
-        twitter: "@arjun_tech",
-        linkedin: "arjunsingh",
-        instagram: "arjun_singh",
-      },
-      achievements: [
-        "Forbes 30 Under 30",
-        "Tech Innovation Award",
-        "Patent Holder",
-      ],
-      isLeadership: true,
-      joinDate: "2021-02-20",
-    },
-    {
       id: 9,
-      name: "Mohammad Uwais Siddiqui",
-      nameHi: "मुहम्मद उवैस सिद्दीक़ी",
+      name: "Owais Siddiqui",
+      nameHi: "ओवैस सिद्दीक़ी",
       role: "Chief Editor",
       roleHi: "मुख्य संपादक",
       department: "editorial",
@@ -156,13 +90,13 @@ const TeamPage = () => {
       bio: "A multimedia journalist specializing in connecting stories from the ground. Graduate in Political Science from Mumbai University, followed by journalism from Jamia Millia Islamia. Passionate about social and political journalism.",
       bioHi:
         "एक मल्टीमीडिया पत्रकार हैं, जो कहानियों को ज़मीन से जोड़कर पेश करने में माहिर हैं. मुंबई विश्वविद्यालय से राजनीति विज्ञान में स्नातक करने के बाद जामिया मिलिया इस्लामिया विश्वविद्यालय, दिल्ली से पत्रकारिता की पढ़ाई की. सामाजिक और राजनीतिक मुद्दों पर पत्रकारिता करना, ग्राउंड रिपोर्टिंग में विशेष रुचि रखते हैं।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Uwais",
-      email: "uwais@republicmirror.com",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Owais",
+      email: "owais@republicmirror.com",
       phone: "+91 98765 43218",
       social: {
-        twitter: "@uwaisjournalist",
-        linkedin: "uwais-siddiqui",
-        instagram: "uwais_siddiqui",
+        twitter: "@owaisjournalist",
+        linkedin: "owais-siddiqui",
+        instagram: "owais_siddiqui",
       },
       achievements: [
         "Best Multimedia Storytelling",
@@ -206,164 +140,6 @@ const TeamPage = () => {
       isLeadership: true,
       joinDate: "2021-04-20",
     },
-    // Fact-Check Team
-    {
-      id: 4,
-      name: "Meera Patel",
-      nameHi: "मीरा पटेल",
-      role: "Senior Fact-Checker",
-      roleHi: "वरिष्ठ तथ्य-जाँचकर्ता",
-      department: "factcheck",
-      experience: "8+ years",
-      education: "MA Mass Communication, Jamia",
-      expertise: [
-        "Political Fact-Checking",
-        "Source Verification",
-        "Deepfake Detection",
-      ],
-      bio: "Specializes in political misinformation and deepfake detection. Verified 5000+ claims.",
-      bioHi:
-        "राजनीतिक गलत सूचना और डीपफेक पहचान में विशेषज्ञ। 5000+ दावों का सत्यापन किया है।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Meera",
-      email: "meera@republicmirror.com",
-      phone: "+91 98765 43213",
-      social: {
-        twitter: "@meerapatel",
-        linkedin: "meerapatel",
-        instagram: "meera_patel",
-      },
-      achievements: [
-        "Verified 5000+ claims",
-        "Accuracy Rate: 99.2%",
-        "Rapid Response Award",
-      ],
-      isLeadership: false,
-      joinDate: "2022-05-15",
-    },
-    {
-      id: 5,
-      name: "Vikram Joshi",
-      nameHi: "विक्रम जोशी",
-      role: "Data Analyst",
-      roleHi: "डेटा विश्लेषक",
-      department: "research",
-      experience: "6+ years",
-      education: "MS Statistics, ISI Kolkata",
-      expertise: ["Data Mining", "Statistical Analysis", "Trend Prediction"],
-      bio: "Analyzes viral trends and misinformation patterns using advanced statistical models.",
-      bioHi:
-        "उन्नत सांख्यिकीय मॉडल का उपयोग करके वायरल ट्रेंड्स और गलत सूचना पैटर्न का विश्लेषण करते हैं।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram",
-      email: "vikram@republicmirror.com",
-      phone: "+91 98765 43214",
-      social: {
-        twitter: "@vikramdata",
-        linkedin: "vikramjoshi",
-        instagram: "vikram_joshi",
-      },
-      achievements: [
-        "Best Research Paper",
-        "Data Science Excellence",
-        "Innovation Award",
-      ],
-      isLeadership: false,
-      joinDate: "2022-08-22",
-    },
-    {
-      id: 6,
-      name: "Ananya Reddy",
-      nameHi: "आन्या रेड्डी",
-      role: "Multimedia Journalist",
-      roleHi: "मल्टीमीडिया पत्रकार",
-      department: "multimedia",
-      experience: "5+ years",
-      education: "BJMC, Christ University",
-      expertise: ["Video Journalism", "Social Media", "Visual Storytelling"],
-      bio: "Creates engaging visual content and documentaries that explain complex issues simply.",
-      bioHi:
-        "आकर्षक दृश्य सामग्री और वृत्तचित्र बनाती हैं जो जटिल मुद्दों को सरलता से समझाते हैं।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ananya",
-      email: "ananya@republicmirror.com",
-      phone: "+91 98765 43215",
-      social: {
-        twitter: "@ananyavision",
-        linkedin: "ananyareddy",
-        instagram: "ananya_reddy",
-      },
-      achievements: [
-        "Best Documentary",
-        "Visual Storytelling Award",
-        "Social Media Impact",
-      ],
-      isLeadership: false,
-      joinDate: "2023-01-10",
-    },
-    {
-      id: 7,
-      name: "Rohit Verma",
-      nameHi: "रोहित वर्मा",
-      role: "AI Engineer",
-      roleHi: "एआई इंजीनियर",
-      department: "technology",
-      experience: "4+ years",
-      education: "BTech AI, IIIT Hyderabad",
-      expertise: [
-        "Machine Learning",
-        "Computer Vision",
-        "Natural Language Processing",
-      ],
-      bio: "Develops AI models for detecting deepfakes and analyzing misinformation patterns.",
-      bioHi:
-        "डीपफेक्स का पता लगाने और गलत सूचना पैटर्न का विश्लेषण करने के लिए एआई मॉडल विकसित करते हैं।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rohit",
-      email: "rohit@republicmirror.com",
-      phone: "+91 98765 43216",
-      social: {
-        twitter: "@rohit_ai",
-        linkedin: "rohitverma",
-        instagram: "rohit_verma",
-      },
-      achievements: [
-        "AI Innovation Award",
-        "Open Source Contributor",
-        "Tech Star",
-      ],
-      isLeadership: false,
-      joinDate: "2023-03-25",
-    },
-    {
-      id: 8,
-      name: "Sneha Kapoor",
-      nameHi: "स्नेहा कपूर",
-      role: "Health Fact-Checker",
-      roleHi: "स्वास्थ्य तथ्य-जाँचकर्ता",
-      department: "factcheck",
-      experience: "7+ years",
-      education: "MBBS, AIIMS Delhi",
-      expertise: [
-        "Medical Misinformation",
-        "Health Journalism",
-        "Science Communication",
-      ],
-      bio: "Medical doctor turned fact-checker, specializes in debunking health-related misinformation.",
-      bioHi:
-        "चिकित्सक से तथ्य-जाँचकर्ता बनीं, स्वास्थ्य संबंधी गलत सूचना को खारिज करने में विशेषज्ञ।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha",
-      email: "sneha@republicmirror.com",
-      phone: "+91 98765 43217",
-      social: {
-        twitter: "@snehahealth",
-        linkedin: "snehakapoor",
-        instagram: "sneha_kapoor",
-      },
-      achievements: [
-        "Health Journalism Award",
-        "WHO Recognition",
-        "Science Communicator",
-      ],
-      isLeadership: false,
-      joinDate: "2022-11-30",
-    },
   ];
 
   // Filter team members
@@ -391,64 +167,95 @@ const TeamPage = () => {
   );
 
   const departmentStats = {
-    editorial: 14,
-    factcheck: 8,
-    technology: 10,
-    research: 6,
-    multimedia: 7,
-    operations: 2,
+    editorial: 2,
   };
 
   const teamStats = [
     {
       label: language === "hi" ? "कुल टीम सदस्य" : "Total Team Members",
-      value: "47+",
+      value: "2",
       icon: Users,
+      description:
+        language === "hi" ? "विशेषज्ञ पत्रकार" : "Expert Journalists",
     },
     {
       label: language === "hi" ? "वर्षों का अनुभव" : "Years of Experience",
-      value: "200+",
+      value: "18+",
       icon: Calendar,
+      description: language === "hi" ? "संयुक्त अनुभव" : "Combined Experience",
     },
     {
-      label: language === "hi" ? "तथ्य-जाँचे गए" : "Claims Verified",
-      value: "5000+",
+      label: language === "hi" ? "कहानियाँ कवर कीं" : "Stories Covered",
+      value: "1000+",
+      icon: Newspaper,
+      description:
+        language === "hi" ? "ग्राउंड रिपोर्टिंग" : "Ground Reporting",
+    },
+    {
+      label: language === "hi" ? "तथ्य-जाँच दर" : "Fact-Check Accuracy",
+      value: "99.8%",
       icon: CheckCircle,
-    },
-    {
-      label: language === "hi" ? "देशों में उपस्थिति" : "Countries Covered",
-      value: "25+",
-      icon: Globe,
+      description: language === "hi" ? "सटीकता दर" : "Accuracy Rate",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* <PublicHeader /> */}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Enhanced Hero Section with News Background */}
+      <section className="relative bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white py-20 overflow-hidden">
+        {/* News-themed background elements */}
+        <div className="absolute inset-0 bg-black/50 z-0">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40"></div>
+        </div>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+        {/* Animated news headlines */}
+        <div className="absolute top-4 left-0 right-0 overflow-hidden opacity-10">
+          <div className="flex animate-marquee whitespace-nowrap">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <span key={i} className="mx-8 text-lg font-semibold">
+                • BREAKING NEWS • FACT CHECK • EXCLUSIVE REPORT • GROUND REALITY
+                •
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-5xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center gap-3 mb-6 bg-red-600/20 backdrop-blur-sm px-6 py-3 rounded-full border border-red-500/30">
+              <Newspaper className="h-6 w-6" />
+              <span className="text-lg font-semibold">
+                {language === "hi"
+                  ? "प्रतिष्ठित पत्रकारिता टीम"
+                  : "Prestigious Journalism Team"}
+              </span>
+            </div>
+
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
               {language === "hi" ? "हमारी टीम" : "Our Team"}
             </h1>
-            <p className="text-xl md:text-2xl opacity-90 mb-8 max-w-3xl mx-auto">
+            <p className="text-2xl md:text-3xl opacity-90 mb-8 max-w-3xl mx-auto font-light">
               {language === "hi"
-                ? "अनुभवी पत्रकारों, तकनीकी विशेषज्ञों और तथ्य-जाँचकर्ताओं की विविध टीम"
-                : "A diverse team of experienced journalists, technical experts, and fact-checkers"}
+                ? "अनुभवी पत्रकारों की टीम जो सत्य और पारदर्शिता के लिए प्रतिबद्ध है"
+                : "A team of experienced journalists committed to truth and transparency"}
             </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Button size="lg" variant="secondary" className="gap-2">
-                <Target className="h-5 w-5" />
+
+            <div className="flex flex-wrap gap-4 justify-center mt-10">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="gap-3 px-8 py-6 text-lg rounded-full shadow-lg"
+              >
+                <Target className="h-6 w-6" />
                 {language === "hi" ? "हमारा मिशन" : "Our Mission"}
               </Button>
               <Button
                 size="lg"
-                variant="outline"
-                className="text-white border-white bg-red-600 gap-2"
+                variant="default"
+                className="bg-red-600 hover:bg-red-700 gap-3 px-8 py-6 text-lg rounded-full shadow-lg"
               >
-                <UserPlus className="h-5 w-5" />
+                <UserPlus className="h-6 w-6" />
                 {language === "hi" ? "हमसे जुड़ें" : "Join Our Team"}
               </Button>
             </div>
@@ -457,21 +264,29 @@ const TeamPage = () => {
       </section>
 
       <main className="container mx-auto px-4 py-12">
-        {/* Team Stats */}
-        <section className="mb-12">
+        {/* Team Stats with enhanced design */}
+        <section className="mb-16">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {teamStats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card key={index} className="border-0 shadow-sm bg-white">
-                  <CardContent className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
-                      <Icon className="h-6 w-6 text-red-600" />
+                <Card
+                  key={index}
+                  className="border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <CardContent className="p-8 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl mb-6 shadow-lg">
+                      <Icon className="h-8 w-8 text-white" />
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                    <div className="text-4xl font-bold text-gray-900 mb-2">
                       {stat.value}
                     </div>
-                    <div className="text-gray-600">{stat.label}</div>
+                    <div className="text-lg font-semibold text-gray-800 mb-2">
+                      {stat.label}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {stat.description}
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -480,49 +295,72 @@ const TeamPage = () => {
         </section>
 
         {/* Department Distribution */}
-        <section className="mb-12">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
+        <section className="mb-16">
+          <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-r from-white to-gray-50">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500"></div>
+            <CardHeader className="text-center pt-8">
+              <CardTitle className="text-3xl font-bold">
                 {language === "hi" ? "विभाग वितरण" : "Department Distribution"}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-lg">
                 {language === "hi"
                   ? "हमारी टीम विभिन्न विशेषज्ञता वाले विभागों में काम करती है"
                   : "Our team works across departments with different specializations"}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {Object.entries(departmentStats).map(([dept, count]) => (
-                  <div
-                    key={dept}
-                    className="text-center p-4 bg-gray-50 rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    <div className="text-2xl font-bold text-red-600 mb-1">
-                      {count}
-                    </div>
-                    <div className="text-sm font-medium capitalize">
-                      {dept === "factcheck"
-                        ? "Fact-Check"
-                        : dept === "editorial"
-                        ? "Editorial"
-                        : dept}
+            <CardContent className="pb-8">
+              <div className="flex justify-center">
+                <div className="relative w-64 h-64">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-5xl font-bold text-red-600">2</div>
+                      <div className="text-gray-600 font-medium">
+                        Team Members
+                      </div>
                     </div>
                   </div>
-                ))}
+                  <svg className="w-full h-full" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="#f3f4f6"
+                      strokeWidth="10"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="#dc2626"
+                      strokeWidth="10"
+                      strokeDasharray="251.2"
+                      strokeDashoffset="0"
+                      strokeLinecap="round"
+                      transform="rotate(-90 50 50)"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-center mt-8">
+                <Badge className="bg-red-100 text-red-800 text-lg px-6 py-2">
+                  Editorial Department
+                </Badge>
               </div>
             </CardContent>
           </Card>
         </section>
 
         {/* Search and Filter */}
-        <section className="mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="mb-12">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
                   <Input
                     placeholder={
                       language === "hi"
@@ -531,16 +369,16 @@ const TeamPage = () => {
                     }
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 py-6 text-lg border-2 rounded-xl"
                   />
                 </div>
                 <Select
                   value={activeDepartment}
                   onValueChange={setActiveDepartment}
                 >
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
+                  <SelectTrigger className="py-6 text-lg border-2 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Filter className="h-5 w-5" />
                       <SelectValue
                         placeholder={
                           language === "hi"
@@ -567,366 +405,217 @@ const TeamPage = () => {
         </section>
 
         {/* Leadership Team */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {language === "hi" ? "नेतृत्व टीम" : "Leadership Team"}
-              </h2>
-              <p className="text-gray-600">
-                {language === "hi"
-                  ? "हमारी दिशा निर्धारित करने वाले अनुभवी नेता"
-                  : "Experienced leaders who set our direction"}
-              </p>
+        <section className="mb-16">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="w-12 h-1 bg-red-600"></div>
+              <span className="text-red-600 font-semibold uppercase tracking-wider">
+                {language === "hi" ? "नेतृत्व" : "Leadership"}
+              </span>
+              <div className="w-12 h-1 bg-red-600"></div>
             </div>
-            <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-              {language === "hi" ? "नेतृत्व" : "Leadership"}
-            </Badge>
+            <h2 className="text-4xl font-bold mb-4">
+              {language === "hi" ? "हमारे नेतृत्वकर्ता" : "Our Leadership"}
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              {language === "hi"
+                ? "अनुभवी पत्रकार जो हमारी दिशा निर्धारित करते हैं"
+                : "Experienced journalists who set our editorial direction"}
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {teamMembers
-              .filter((member) => member.isLeadership)
-              .map((member) => (
-                <Card
-                  key={member.id}
-                  className="overflow-hidden hover:shadow-lg transition-shadow border-red-200"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center text-center">
-                      <Avatar className="h-28 w-28 mb-4 border-4 border-red-100">
-                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xl">
-                          {member.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="mb-4">
-                        <h3 className="font-bold text-lg mb-1 truncate w-full">
-                          {language === "hi" ? member.nameHi : member.name}
-                        </h3>
-                        <Badge className="bg-red-100 text-red-700 border-red-200 mb-2 text-xs">
-                          {language === "hi" ? member.roleHi : member.role}
-                        </Badge>
-                        <p className="text-xs text-gray-600">
-                          {member.experience}
-                        </p>
-                      </div>
-
-                      <div className="w-full space-y-2 mb-3">
-                        <div className="flex items-center justify-center gap-1">
-                          <Briefcase className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs">
-                            {language === "hi" ? "विभाग:" : "Department:"}{" "}
-                            {member.department}
-                          </span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {teamMembers.map((member) => (
+              <Card
+                key={member.id}
+                className="overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br from-white to-gray-50"
+              >
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-500 to-orange-500"></div>
+                <CardContent className="p-8">
+                  <div className="flex flex-col lg:flex-row gap-8">
+                    <div className="flex flex-col items-center lg:items-start">
+                      <div className="relative">
+                        <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+                          <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-3xl">
+                            {member.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-2 -right-2 bg-red-600 text-white p-2 rounded-full">
+                          <Star className="h-5 w-5" />
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1 mb-3 justify-center">
-                        {member.expertise.slice(0, 2).map((exp, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className="text-xs px-1"
-                          >
-                            {exp.split(" ")[0]}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="gap-1 text-xs">
-                          <Mail className="h-3 w-3" />
-                          Email
+                      <div className="mt-6 flex gap-3">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="rounded-full"
+                        >
+                          <Linkedin className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1 text-xs">
-                          <MessageSquare className="h-3 w-3" />
-                          {language === "hi" ? "प्रोफाइल" : "Profile"}
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="rounded-full"
+                        >
+                          <Twitter className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="rounded-full"
+                        >
+                          <Mail className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        </section>
 
-        {/* Ad - Middle */}
-        <div className="my-8">
-          <GoogleAdSense
-            adSlot="728x90_team_middle"
-            adFormat="horizontal"
-            fullWidthResponsive={true}
-            className="w-full"
-          />
-        </div>
-
-        {/* All Team Members */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {language === "hi" ? "हमारी पूरी टीम" : "Our Complete Team"}
-              </h2>
-              <p className="text-gray-600">
-                {language === "hi"
-                  ? `${filteredMembers.length} टीम सदस्य मिले`
-                  : `${filteredMembers.length} team members found`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm">
-                {language === "hi" ? "पेज" : "Page"} {currentPage}{" "}
-                {language === "hi" ? "का" : "of"} {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {currentMembers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentMembers.map((member) => (
-                <Card
-                  key={member.id}
-                  className="overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex gap-4">
-                      <Avatar className="h-20 w-20 flex-shrink-0">
-                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white">
-                          {member.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="font-bold text-lg mb-1">
-                              {language === "hi" ? member.nameHi : member.name}
-                            </h3>
-                            <Badge
-                              variant="outline"
-                              className="text-xs capitalize"
-                            >
-                              {member.department}
-                            </Badge>
-                          </div>
-                          {member.isLeadership && (
-                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                          )}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-2xl font-bold mb-1">
+                            {language === "hi" ? member.nameHi : member.name}
+                          </h3>
+                          <Badge className="bg-red-100 text-red-700 border-red-200 text-sm px-3 py-1">
+                            {language === "hi" ? member.roleHi : member.role}
+                          </Badge>
                         </div>
+                        <Badge variant="outline" className="text-sm">
+                          {member.experience}
+                        </Badge>
+                      </div>
 
-                        <p className="text-sm font-medium text-red-600 mb-2">
-                          {language === "hi" ? member.roleHi : member.role}
-                        </p>
-
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 text-gray-600 mb-2">
+                          <GraduationCap className="h-4 w-4" />
+                          <span className="font-medium">
+                            {member.education}
+                          </span>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">
                           {language === "hi" ? member.bioHi : member.bio}
                         </p>
+                      </div>
 
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {member.expertise.slice(0, 2).map((exp, idx) => (
+                      <div className="mb-6">
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-red-600" />
+                          {language === "hi" ? "विशेषज्ञता" : "Expertise"}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {member.expertise.map((exp, idx) => (
                             <Badge
                               key={idx}
                               variant="secondary"
-                              className="text-xs"
+                              className="bg-blue-50 text-blue-700 hover:bg-blue-100"
                             >
                               {exp}
                             </Badge>
                           ))}
                         </div>
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex gap-2">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
+                      <div className="mb-6">
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Award className="h-4 w-4 text-yellow-600" />
+                          {language === "hi" ? "उपलब्धियाँ" : "Achievements"}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {member.achievements.map((ach, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="outline"
+                              className="text-sm"
                             >
-                              <Mail className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
-                            >
-                              <Linkedin className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/team/${member.id}`}>
-                              {language === "hi" ? "विवरण" : "Details"}
-                            </Link>
-                          </Button>
+                              {ach}
+                            </Badge>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">
-                  {language === "hi"
-                    ? "कोई टीम सदस्य नहीं मिला"
-                    : "No Team Members Found"}
-                </h3>
-                <p className="text-gray-600">
-                  {language === "hi"
-                    ? "खोजे गए शब्दों से मेल खाने वाला कोई टीम सदस्य नहीं मिला"
-                    : "No team members found matching your search"}
-                </p>
-              </CardContent>
-            </Card>
-          )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-8">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
-                  {language === "hi" ? "पहला" : "First"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum =
-                    Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="w-10 h-10 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  {language === "hi" ? "अंतिम" : "Last"}
-                </Button>
-              </div>
-            </div>
-          )}
+                      <Button className="w-full gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        {language === "hi"
+                          ? "पूरा प्रोफाइल देखें"
+                          : "View Full Profile"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </section>
 
         {/* Our Values */}
-        <section className="mb-12">
-          <Card className="border-red-200 bg-gradient-to-r from-red-50 to-white">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">
-                {language === "hi"
-                  ? "हम क्या प्रदान करते हैं"
-                  : "What We Offer"}
-              </CardTitle>
-              <CardDescription>
-                {language === "hi"
-                  ? "हमारी टीम के सदस्यों के लिए अवसर और लाभ"
-                  : "Opportunities and benefits for our team members"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="text-center p-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
-                    <Award className="h-6 w-6 text-red-600" />
+        <section className="mb-16">
+          <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-r from-gray-900 to-gray-800 text-white">
+            <CardContent className="p-12">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold mb-4">
+                  {language === "hi" ? "हमारे मूल्य" : "Our Core Values"}
+                </h2>
+                <p className="text-xl opacity-90 max-w-2xl mx-auto">
+                  {language === "hi"
+                    ? "जिन सिद्धांतों पर हमारी पत्रकारिता आधारित है"
+                    : "The principles that guide our journalism"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
+                    <Eye className="h-8 w-8" />
                   </div>
-                  <h4 className="font-bold text-lg mb-2">
-                    {language === "hi" ? "पेशेवर विकास" : "Professional Growth"}
+                  <h4 className="font-bold text-xl mb-4">
+                    {language === "hi" ? "पारदर्शिता" : "Transparency"}
                   </h4>
-                  <p className="text-gray-600 text-sm">
+                  <p className="opacity-90">
                     {language === "hi"
-                      ? "नियमित प्रशिक्षण, कार्यशालाएं और करियर उन्नति के अवसर"
-                      : "Regular training, workshops, and career advancement opportunities"}
+                      ? "हर रिपोर्ट के पीछे स्पष्ट सोर्सिंग और मेथडोलॉजी"
+                      : "Clear sourcing and methodology behind every report"}
                   </p>
                 </div>
 
-                <div className="text-center p-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
-                    <Heart className="h-6 w-6 text-red-600" />
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
+                    <Shield className="h-8 w-8" />
                   </div>
-                  <h4 className="font-bold text-lg mb-2">
-                    {language === "hi" ? "स्वास्थ्य लाभ" : "Health Benefits"}
+                  <h4 className="font-bold text-xl mb-4">
+                    {language === "hi" ? "सत्यता" : "Truth"}
                   </h4>
-                  <p className="text-gray-600 text-sm">
+                  <p className="opacity-90">
                     {language === "hi"
-                      ? "स्वास्थ्य बीमा, मानसिक स्वास्थ्य सहायता और कल्याण कार्यक्रम"
-                      : "Health insurance, mental health support, and wellness programs"}
+                      ? "सत्य के प्रति अटूट प्रतिबद्धता, चाहे परिणाम कुछ भी हो"
+                      : "Unwavering commitment to truth, regardless of consequences"}
                   </p>
                 </div>
 
-                <div className="text-center p-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
-                    <TrendingUp className="h-6 w-6 text-red-600" />
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
+                    <Heart className="h-8 w-8" />
                   </div>
-                  <h4 className="font-bold text-lg mb-2">
-                    {language === "hi"
-                      ? "शोध के अवसर"
-                      : "Research Opportunities"}
+                  <h4 className="font-bold text-xl mb-4">
+                    {language === "hi" ? "निष्पक्षता" : "Impartiality"}
                   </h4>
-                  <p className="text-gray-600 text-sm">
+                  <p className="opacity-90">
                     {language === "hi"
-                      ? "अकादमिक संस्थानों के साथ शोध परियोजनाएं और सहयोग"
-                      : "Research projects and collaborations with academic institutions"}
+                      ? "बिना किसी पूर्वाग्रह के संतुलित रिपोर्टिंग"
+                      : "Balanced reporting without any bias or prejudice"}
                   </p>
                 </div>
 
-                <div className="text-center p-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4">
-                    <Shield className="h-6 w-6 text-red-600" />
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
+                    <Clock className="h-8 w-8" />
                   </div>
-                  <h4 className="font-bold text-lg mb-2">
-                    {language === "hi" ? "कार्य संतुलन" : "Work-Life Balance"}
+                  <h4 className="font-bold text-xl mb-4">
+                    {language === "hi" ? "समयबद्धता" : "Timeliness"}
                   </h4>
-                  <p className="text-gray-600 text-sm">
+                  <p className="opacity-90">
                     {language === "hi"
-                      ? "लचीले कार्य घंटे, दूरस्थ कार्य विकल्प और उदार अवकाश नीति"
-                      : "Flexible hours, remote work options, and generous leave policy"}
+                      ? "सही जानकारी सही समय पर पहुँचाना"
+                      : "Delivering accurate information at the right time"}
                   </p>
                 </div>
               </div>
@@ -934,47 +623,94 @@ const TeamPage = () => {
           </Card>
         </section>
 
-        {/* Join Our Team */}
-        <section className="mb-12">
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <CardContent className="p-12 text-center">
+        {/* Join Our Team - Enhanced */}
+        <section className="mb-16">
+          <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-br from-red-50 via-white to-blue-50">
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
+            <CardContent className="p-12 text-center relative">
               <div className="max-w-2xl mx-auto">
-                <h2 className="text-3xl font-bold mb-4">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl mb-6 shadow-lg">
+                  <Newspaper className="h-10 w-10 text-white" />
+                </div>
+                <h2 className="text-4xl font-bold mb-6">
                   {language === "hi"
                     ? "हमारी टीम का हिस्सा बनें"
-                    : "Join Our Team"}
+                    : "Join Our Journalism Team"}
                 </h2>
-                <p className="text-gray-700 mb-8">
+                <p className="text-xl text-gray-700 mb-10">
                   {language === "hi"
-                    ? "क्या आप सत्य और पारदर्शिता के लिए प्रतिबद्ध हैं? हम हमेशा प्रतिभाशाली पत्रकारों, शोधकर्ताओं और तकनीकी विशेषज्ञों की तलाश में रहते हैं।"
-                    : "Are you committed to truth and transparency? We're always looking for talented journalists, researchers, and technical experts."}
+                    ? "क्या आप सत्य और पारदर्शिता के लिए प्रतिबद्ध हैं? हम ऐसे प्रतिभाशाली पत्रकारों की तलाश में हैं जो गहन शोध और निष्पक्ष रिपोर्टिंग में विश्वास रखते हैं।"
+                    : "Are you committed to truth and transparency? We're looking for talented journalists who believe in in-depth research and impartial reporting."}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" className="gap-2">
-                    <UserPlus className="h-5 w-5" />
+                <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                  <Button
+                    size="lg"
+                    className="gap-3 px-8 py-6 text-lg rounded-full shadow-lg"
+                  >
+                    <UserPlus className="h-6 w-6" />
                     {language === "hi"
                       ? "खुली पदों पर जाएं"
                       : "View Open Positions"}
                   </Button>
-                  <Button size="lg" variant="outline" className="gap-2">
-                    <Mail className="h-5 w-5" />
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="gap-3 px-8 py-6 text-lg rounded-full border-2"
+                  >
+                    <Mail className="h-6 w-6" />
                     {language === "hi"
                       ? "स्वतः आवेदन भेजें"
-                      : "Send Spontaneous Application"}
+                      : "Send Your Portfolio"}
                   </Button>
                 </div>
-                <p className="text-sm text-gray-600 mt-6">
-                  {language === "hi"
-                    ? "वर्तमान में 5+ पदों पर भर्ती चल रही है"
-                    : "Currently hiring for 5+ positions"}
-                </p>
+                <div className="mt-10 p-6 bg-white/50 backdrop-blur-sm rounded-2xl">
+                  <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>
+                        {language === "hi"
+                          ? "तुरंत ज्वाइन कर सकते हैं"
+                          : "Can join immediately"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>
+                        {language === "hi"
+                          ? "दूरस्थ कार्य विकल्प"
+                          : "Remote work options"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span>
+                        {language === "hi"
+                          ? "प्रतिस्पर्धी वेतन"
+                          : "Competitive salary"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </section>
       </main>
 
-      {/* <PublicFooter /> */}
+      <style jsx global>{`
+        @keyframes marquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
