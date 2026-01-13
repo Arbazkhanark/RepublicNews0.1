@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Eye, Upload, Tag, User, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Eye, Upload, Tag, User, Loader2, Image as ImageIcon, X, Globe, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { MultilingualRichTextEditor } from "./rich-text-editor";
 
 interface Author {
   _id: string;
@@ -30,11 +40,16 @@ export default function NewOpinionPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [authors, setAuthors] = useState<Author[]>([]);
+  const [activeLanguage, setActiveLanguage] = useState<"en" | "hi">("en");
 
   const [formData, setFormData] = useState({
     title: "",
+    titleHi: "",
     imageUrl: "",
-    content: "",
+    content: {
+      en: "",
+      hi: "",
+    },
     topic: "",
     tags: [] as string[],
     status: "draft" as "draft" | "pending",
@@ -73,6 +88,10 @@ export default function NewOpinionPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleContentChange = (content: { en: string; hi: string }) => {
+    setFormData((prev) => ({ ...prev, content }));
+  };
+
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData((prev) => ({
@@ -99,7 +118,7 @@ export default function NewOpinionPage() {
         toast.error("Title is required");
         return;
       }
-      if (!formData.content.trim()) {
+      if (!formData.content.en.trim()) {
         toast.error("Content is required");
         return;
       }
@@ -117,14 +136,16 @@ export default function NewOpinionPage() {
 
       const requestBody = {
         title: formData.title,
+        titleHi: formData.titleHi || formData.title,
         imageUrl: formData.imageUrl || undefined,
-        content: formData.content,
+        content: formData.content.en,
+        contentHi: formData.content.hi || formData.content.en,
         topic: formData.topic,
         tags: formData.tags,
         status: status,
       };
 
-      const response = await fetch("/api/admin/opinions", {
+      const response = await fetch("/api/public/opinion", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -145,7 +166,7 @@ export default function NewOpinionPage() {
           status === "draft" ? "saved as draft" : "submitted for approval"
         } successfully`
       );
-      router.push("/admin/opinions");
+      // router.push("/admin/opinions");
     } catch (error) {
       console.error("Error creating opinion:", error);
       toast.error("Failed to create opinion");
@@ -190,15 +211,37 @@ export default function NewOpinionPage() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                New Article
+                New Opinion Article
               </h1>
               <p className="text-muted-foreground mt-1">
-                Create a new opinion article
+                Create a new opinion article in English and Hindi
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {/* Language Toggle */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={activeLanguage === "en" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveLanguage("en")}
+                className="flex items-center gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                EN
+              </Button>
+              <Button
+                variant={activeLanguage === "hi" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveLanguage("hi")}
+                className="flex items-center gap-2"
+              >
+                <Languages className="w-4 h-4" />
+                HI
+              </Button>
+            </div>
+            
             <Button
               variant="outline"
               onClick={() => handleSave("draft")}
@@ -235,42 +278,78 @@ export default function NewOpinionPage() {
                 <CardTitle>Article Content</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    placeholder="Enter article title..."
-                    className="mt-2"
-                    disabled={saving}
-                  />
-                </div>
+                <Tabs defaultValue="english" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="english" className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      English
+                    </TabsTrigger>
+                    <TabsTrigger value="hindi" className="flex items-center gap-2">
+                      <Languages className="h-4 w-4" />
+                      हिंदी
+                    </TabsTrigger>
+                  </TabsList>
 
-                <div>
-                  <Label htmlFor="topic">Topic *</Label>
-                  <Input
-                    id="topic"
-                    value={formData.topic}
-                    onChange={(e) => handleInputChange("topic", e.target.value)}
-                    placeholder="e.g., Environment, Technology, Politics"
-                    className="mt-2"
-                    disabled={saving}
-                  />
-                </div>
+                  <TabsContent value="english" className="space-y-4 py-4">
+                    <div>
+                      <Label htmlFor="title">Title *</Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => handleInputChange("title", e.target.value)}
+                        placeholder="Enter article title in English..."
+                        className="mt-2"
+                        disabled={saving}
+                      />
+                    </div>
 
+                    <div>
+                      <Label htmlFor="topic">Topic *</Label>
+                      <Input
+                        id="topic"
+                        value={formData.topic}
+                        onChange={(e) => handleInputChange("topic", e.target.value)}
+                        placeholder="e.g., Environment, Technology, Politics"
+                        className="mt-2"
+                        disabled={saving}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="hindi" className="space-y-4 py-4">
+                    <div>
+                      <Label htmlFor="titleHi">शीर्षक *</Label>
+                      <Input
+                        id="titleHi"
+                        value={formData.titleHi}
+                        onChange={(e) => handleInputChange("titleHi", e.target.value)}
+                        placeholder="अंग्रेजी में शीर्षक दर्ज करें..."
+                        className="mt-2"
+                        disabled={saving}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Leave empty to auto-translate from English
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                {/* Multilingual Editor */}
                 <div>
-                  <Label htmlFor="content">Content *</Label>
-                  <Textarea
-                    id="content"
-                    value={formData.content}
-                    onChange={(e) =>
-                      handleInputChange("content", e.target.value)
-                    }
-                    placeholder="Write your article content here..."
-                    className="mt-2 min-h-[400px]"
-                    disabled={saving}
-                  />
+                  <Label>Content *</Label>
+                  <div className="mt-2">
+                    <MultilingualRichTextEditor
+                      content={formData.content}
+                      onChange={handleContentChange}
+                      placeholder={{
+                        en: "Write your article content in English...",
+                        hi: "अपनी लेख सामग्री हिंदी में लिखें..."
+                      }}
+                      activeLanguage={activeLanguage}
+                      onLanguageChange={setActiveLanguage}
+                      syncTemplates={true}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -350,9 +429,6 @@ export default function NewOpinionPage() {
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Image
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  Note: Currently supports image URLs. File upload coming soon.
-                </p>
               </CardContent>
             </Card>
 
@@ -397,6 +473,31 @@ export default function NewOpinionPage() {
                     Add tags to categorize your opinion
                   </p>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Help */}
+            <Card className="border-border bg-blue-50 border-blue-200">
+              <CardHeader>
+                <CardTitle className="text-blue-800">Multilingual Writing Tips</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <p className="text-blue-700">Start with English content first</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <p className="text-blue-700">Hindi content will auto-fill from English if left empty</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <p className="text-blue-700">Use templates for better structure in both languages</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <p className="text-blue-700">Add bilingual captions for images</p>
+                </div>
               </CardContent>
             </Card>
           </div>

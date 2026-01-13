@@ -91,7 +91,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const menuItems = [
     { href: "/admin", icon: Home, label: "Dashboard" },
     { href: "/admin/articles", icon: FileText, label: "All Articles" },
-    { href: "/admin/articles/create", icon: Plus, label: "Create News" },
+    { href: "/admin/articles/new", icon: Plus, label: "Create News" },
     {
       href: "/admin/newsletter",
       icon: Newspaper,

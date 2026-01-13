@@ -7,6 +7,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  MessageCircleReply,
 } from "lucide-react";
 
 export function PublicFooter() {
@@ -23,30 +24,56 @@ export function PublicFooter() {
               Reflection of Truth - Your trusted source for accurate and
               unbiased news coverage.
             </p>
+
             <div className="flex space-x-4">
+              {/* Whatsapp (Optional - if you add later) */}
               <Link
-                href="#"
+                href="https://www.whatsapp.com/channel/0029Vb7cri0XnlqW0P7K53R"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-gray-300 hover:text-white transition-colors"
               >
-                <Facebook className="w-5 h-5" />
+                <MessageCircleReply className="w-5 h-5" />
               </Link>
+
+              {/* Instagram */}
               <Link
-                href="#"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                <Twitter className="w-5 h-5" />
-              </Link>
-              <Link
-                href="#"
+                href="https://www.instagram.com/republic.mirror?utm_source=qr&igsh=MTdvNmN0ZXk1aTBzcQ=="
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-gray-300 hover:text-white transition-colors"
               >
                 <Instagram className="w-5 h-5" />
               </Link>
+
+              {/* YouTube */}
               <Link
-                href="#"
+                href="https://www.youtube.com/@therepublicmirror"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-gray-300 hover:text-white transition-colors"
               >
                 <Youtube className="w-5 h-5" />
+              </Link>
+
+              {/* Facebook (Optional - if you add later) */}
+              <Link
+                href="https://www.facebook.com/share/17oFjCf5eU/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                <Facebook className="w-5 h-5" />
+              </Link>
+
+              {/* Twitter (X) */}
+              <Link
+                href="https://x.com/MirrorRepu11808"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                <Twitter className="w-5 h-5" />
               </Link>
             </div>
           </div>
@@ -58,7 +85,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/about-us"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   About Us
                 </Link>
@@ -66,7 +93,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/our-team"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Our Team
                 </Link>
@@ -74,7 +101,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/contact"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Contact
                 </Link>
@@ -82,23 +109,20 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/privacy"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/terms"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
+                <Link href="/terms" className="text-gray-300 hover:text-white">
                   Terms of Service
                 </Link>
               </li>
               <li>
                 <Link
                   href="/advertise"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Advertise
                 </Link>
@@ -113,7 +137,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/category/national"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   National
                 </Link>
@@ -121,7 +145,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/category/international"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   International
                 </Link>
@@ -129,7 +153,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/category/politics"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Politics
                 </Link>
@@ -137,7 +161,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/category/economy"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Economy
                 </Link>
@@ -145,7 +169,7 @@ export function PublicFooter() {
               <li>
                 <Link
                   href="/category/sports"
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white"
                 >
                   Sports
                 </Link>
@@ -161,10 +185,10 @@ export function PublicFooter() {
                 <Mail className="w-4 h-4 text-red-600" />
                 <span className="text-gray-300">editor@republicmirror.com</span>
               </div>
-              <div className="flex items-center space-x-3">
+              {/* <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-red-600" />
                 <span className="text-gray-300">+91 96 5323 1654</span>
-              </div>
+              </div> */}
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-red-600" />
                 <span className="text-gray-300">New Delhi, India</span>
@@ -173,6 +197,7 @@ export function PublicFooter() {
           </div>
         </div>
 
+        {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-300 text-sm">

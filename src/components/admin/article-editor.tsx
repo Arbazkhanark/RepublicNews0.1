@@ -31,14 +31,25 @@ import {
   Loader2,
   Upload,
   Trash2,
+  AlertCircle,
+  HelpCircle,
+  Wand2,
+  Grip,
 } from "lucide-react";
-import { RichTextEditor } from "@/components/admin/rich-text-editor";
-import { MediaUploader } from "@/components/admin/media-uploader";
+// import { MultilingualRichTextEditor as RichTextEditor } from "@/components/admin/rich-text-editor";
 import { ArticlePreview } from "@/components/admin/article-preview";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
 } from "@/lib/cloudinary-client";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RichTextEditor } from "./rich-editor-article";
 
 interface ArticleEditorProps {
   articleId?: string;
@@ -197,6 +208,8 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
   const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>(
     []
   );
+  const [showTips, setShowTips] = useState(true);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   const featuredImageRef = useRef<HTMLInputElement>(null);
@@ -264,12 +277,6 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
           const data = await response.json();
           const articleData = data.data || data.article;
 
-          // Debug log
-          console.log("Fetched article data:", articleData);
-          console.log("mediaUrls:", articleData.mediaUrls);
-          console.log("cloudinaryImages:", articleData.cloudinaryImages);
-          console.log("category:", articleData.category);
-
           // Safely extract data with defaults
           const articleWithDefaults: Article = {
             title: articleData.title || "",
@@ -308,8 +315,6 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
               : "",
           };
 
-          console.log("Processed article:", articleWithDefaults);
-
           setArticle(articleWithDefaults);
           setCloudinaryImages(
             Array.isArray(articleData.cloudinaryImages)
@@ -339,7 +344,43 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
   ) => {
     try {
       setIsUploading(true);
-      const { url, publicId } = await uploadToCloudinary(file);
+      
+      // Show image size recommendations
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+      
+      img.onload = async () => {
+        const width = img.width;
+        const height = img.height;
+        const aspectRatio = width / height;
+        
+        let recommendation = "";
+        if (type === "featured") {
+          if (width < 1200 || height < 630) {
+            recommendation = "Recommended: 1200x630px (16:9 ratio) for best quality";
+          }
+        } else if (type === "featuredArticle") {
+          if (width < 800 || height < 400) {
+            recommendation = "Recommended: 800x400px (2:1 ratio)";
+          }
+        }
+        
+        if (recommendation) {
+          toast("Note", recommendation, "default");
+        }
+        
+        URL.revokeObjectURL(objectUrl);
+      };
+
+      const { url, publicId } = await uploadToCloudinary(file, {
+        transformation: {
+          width: 1200,
+          height: 630,
+          crop: 'fill',
+          quality: 'auto:good'
+        }
+      });
 
       const imageData = {
         url,
@@ -434,6 +475,71 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
     }
   };
 
+  // Drag and drop handlers for media reordering
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (index: number) => {
+    if (dragIndex === null) return;
+    
+    const newMediaUrls = [...(article.mediaUrls || [])];
+    const [draggedItem] = newMediaUrls.splice(dragIndex, 1);
+    newMediaUrls.splice(index, 0, draggedItem);
+    
+    setArticle((prev) => ({
+      ...prev,
+      mediaUrls: newMediaUrls,
+    }));
+    
+    setDragIndex(null);
+  };
+
+  const suggestAlignment = () => {
+    const contentLength = article.content.length + article.contentHi.length;
+    const hasImages = article.mediaUrls.length > 0 || article.featuredImage;
+    
+    let suggestions = [];
+    
+    if (contentLength < 500) {
+      suggestions.push("For short articles, consider placing images at the top or center for maximum impact.");
+    } else if (contentLength > 1500) {
+      suggestions.push("For longer articles, left-aligned images with text wrap work well for readability.");
+    }
+    
+    if (hasImages && article.mediaUrls.length > 2) {
+      suggestions.push("With multiple images, consider using a grid layout in your content.");
+    }
+    
+    return suggestions;
+  };
+
+  const autoFormatContent = () => {
+    // Auto-format English content
+    let formattedContent = article.content;
+    
+    // Add proper spacing after periods if missing
+    formattedContent = formattedContent.replace(/\.([a-zA-Z])/g, '. $1');
+    
+    // Add paragraph breaks for long text
+    const sentences = formattedContent.split('. ');
+    if (sentences.length > 4) {
+      formattedContent = sentences.map((sentence, index) => {
+        if (index > 0 && index % 3 === 0) {
+          return `\n\n${sentence}`;
+        }
+        return sentence;
+      }).join('. ');
+    }
+    
+    setArticle((prev) => ({ ...prev, content: formattedContent }));
+    toast("Success", "Content auto-formatted for better readability");
+  };
+
   const handleSave = async () => {
     try {
       setIsLoading(true);
@@ -470,8 +576,6 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         scheduledAt: article.scheduledAt || "",
       };
 
-      console.log("Saving article data:", articleData);
-
       const url = articleId ? `/api/news/${articleId}` : "/api/news";
       const method = articleId ? "PATCH" : "POST";
 
@@ -489,7 +593,6 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
       });
 
       const data = await response.json();
-      console.log("Save response:", data);
 
       if (response.ok) {
         toast(
@@ -513,7 +616,6 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
 
   const handlePublish = async () => {
     try {
-      console.log("Publishing article...", article);
       setIsLoading(true);
 
       const articleData = {
@@ -547,8 +649,6 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         scheduledAt: article.scheduledAt || "",
       };
 
-      console.log("Publishing article data:", articleData);
-
       const url = articleId ? `/api/news/${articleId}` : "/api/news";
       const method = articleId ? "PATCH" : "POST";
 
@@ -565,10 +665,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
         body: JSON.stringify(articleData),
       });
 
-      console.log("Publish response:", response);
-
       const data = await response.json();
-      console.log("Publish response data:", data);
 
       if (response.ok) {
         setArticle((prev) => ({ ...prev, status: "published" }));
@@ -615,8 +712,71 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
     );
   }
 
+  const alignmentSuggestions = suggestAlignment();
+
   return (
     <div className="space-y-6">
+      {/* Tips and Suggestions */}
+      {showTips && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="flex justify-between items-center">
+            <div>
+              <strong>Tips for News Articles:</strong>
+              <ul className="list-disc list-inside text-sm mt-1 ml-4">
+                <li>Use 1200x630px images for featured images</li>
+                <li>Start with a strong headline that summarizes the news</li>
+                <li>Use the 5 W's (Who, What, When, Where, Why) in first paragraph</li>
+                <li>Keep paragraphs short (2-3 sentences) for online reading</li>
+              </ul>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTips(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alignment Suggestions */}
+      {alignmentSuggestions.length > 0 && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <Wand2 className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex justify-between items-center">
+            <div>
+              <strong>Layout Suggestions:</strong>
+              <ul className="list-disc list-inside text-sm mt-1 ml-4">
+                {alignmentSuggestions.map((suggestion, index) => (
+                  <li key={index}>{suggestion}</li>
+                ))}
+              </ul>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                // Apply suggestions
+                if (alignmentSuggestions[0].includes("top")) {
+                  setArticle((prev) => ({
+                    ...prev,
+                    layoutConfig: {
+                      ...prev.layoutConfig,
+                      imagePosition: "top"
+                    }
+                  }));
+                }
+                toast("Success", "Layout suggestions applied");
+              }}
+            >
+              Apply
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="editor">Editor</TabsTrigger>
@@ -632,16 +792,37 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 <CardHeader>
                   <CardTitle>Article Content</CardTitle>
                   <CardDescription>
-                    Write your article content in English and Hindi
+                    Write your news article content in English and Hindi
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2"
+                      onClick={autoFormatContent}
+                    >
+                      <Wand2 className="h-4 w-4 mr-1" />
+                      Auto Format
+                    </Button>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="title">Title (English)</Label>
+                      <div className="flex items-center space-x-2">
+                        <Label htmlFor="title">Title (English)</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Keep it under 60 characters for SEO</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <Input
                         id="title"
-                        placeholder="Enter article title..."
+                        placeholder="Enter news headline..."
                         value={article.title}
                         onChange={(e) =>
                           setArticle((prev) => ({
@@ -650,12 +831,15 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           }))
                         }
                       />
+                      <div className="text-xs text-muted-foreground">
+                        {article.title.length}/60 characters
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="titleHi">Title (Hindi)</Label>
                       <Input
                         id="titleHi"
-                        placeholder="लेख का शीर्षक दर्ज करें..."
+                        placeholder="समाचार का शीर्षक दर्ज करें..."
                         value={article.titleHi}
                         onChange={(e) =>
                           setArticle((prev) => ({
@@ -672,7 +856,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       <Label htmlFor="subtitle">Subtitle (English)</Label>
                       <Input
                         id="subtitle"
-                        placeholder="Enter subtitle..."
+                        placeholder="Brief summary of the news..."
                         value={article.subtitle}
                         onChange={(e) =>
                           setArticle((prev) => ({
@@ -686,7 +870,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       <Label htmlFor="subtitleHi">Subtitle (Hindi)</Label>
                       <Input
                         id="subtitleHi"
-                        placeholder="उपशीर्षक दर्ज करें..."
+                        placeholder="समाचार का संक्षिप्त सारांश..."
                         value={article.subtitleHi}
                         onChange={(e) =>
                           setArticle((prev) => ({
@@ -699,13 +883,40 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Content (English)</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Content (English)</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          // Insert news template
+                          const template = `**Lead Paragraph:** Start with the most important information (5 W's).
+
+**Key Details:** Provide supporting facts and details.
+
+**Background:** Add context and background information.
+
+**Quotes:** Include relevant quotes from sources.
+
+**Impact:** Explain the significance and impact.
+
+**What's Next:** Mention future developments or actions.`;
+                          
+                          setArticle((prev) => ({
+                            ...prev,
+                            content: prev.content + (prev.content ? '\n\n' : '') + template
+                          }));
+                        }}
+                      >
+                        Insert News Template
+                      </Button>
+                    </div>
                     <RichTextEditor
                       content={article.content}
                       onChange={(content) =>
                         setArticle((prev) => ({ ...prev, content }))
                       }
-                      placeholder="Write your article content here..."
+                      placeholder="Write your news article here. Start with the most important information..."
                     />
                   </div>
 
@@ -716,7 +927,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       onChange={(content) =>
                         setArticle((prev) => ({ ...prev, contentHi: content }))
                       }
-                      placeholder="यहाँ अपना लेख लिखें..."
+                      placeholder="समाचार का विवरण यहाँ लिखें..."
                     />
                   </div>
                 </CardContent>
@@ -727,10 +938,10 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <ImageIcon className="h-5 w-5" />
-                    <span>Media</span>
+                    <span>Media Gallery</span>
                   </CardTitle>
                   <CardDescription>
-                    Upload images and videos for your article
+                    Drag and drop to reorder images. Click to delete.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -764,35 +975,54 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           }
                         }}
                       />
+                      <div className="text-sm text-muted-foreground">
+                        <p>Recommended: 1200x630px for featured images</p>
+                        <p>Images will be automatically resized and optimized</p>
+                      </div>
                     </div>
 
-                    <div className="text-sm text-muted-foreground">
-                      Upload images/videos to Cloudinary. They will be stored
-                      securely and optimized.
-                    </div>
-                  </div>
-
-                  {(article.mediaUrls || []).length > 0 && (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {(article.mediaUrls || []).map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={url || "/placeholder.svg"}
-                            alt={`Media ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border"
-                          />
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeMedia(index, url)}
+                    {(article.mediaUrls || []).length > 0 && (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {(article.mediaUrls || []).map((url, index) => (
+                          <div
+                            key={index}
+                            className="relative group border rounded-lg overflow-hidden bg-gray-50"
+                            draggable
+                            onDragStart={() => handleDragStart(index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDrop={() => handleDrop(index)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                            <div className="absolute top-2 left-2 z-10 cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Grip className="h-4 w-4 text-gray-500 bg-white rounded p-0.5" />
+                            </div>
+                            <img
+                              src={url || "/placeholder.svg"}
+                              alt={`Media ${index + 1}`}
+                              className="w-full h-48 object-cover"
+                              style={{
+                                width: '100%',
+                                height: '192px',
+                                objectFit: 'cover'
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all" />
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeMedia(index, url)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <div className="p-2 text-xs text-muted-foreground">
+                              <div className="truncate">Image {index + 1}</div>
+                              <div className="text-xs opacity-75">Drag to reorder</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -859,7 +1089,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="featuredImage">Featured Image</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="featuredImage">Featured Image</Label>
+                      <span className="text-xs text-muted-foreground">
+                        1200x630px recommended
+                      </span>
+                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Button
@@ -883,18 +1118,25 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           className="hidden"
                           onChange={handleFeaturedImageUpload}
                         />
-                        <span className="text-sm text-muted-foreground">
-                          Main article image
-                        </span>
                       </div>
 
-                      {article.featuredImage && (
-                        <div className="relative mt-2">
+                      {article.featuredImage ? (
+                        <div className="relative mt-2 border rounded-lg overflow-hidden">
                           <img
                             src={article.featuredImage}
                             alt="Featured"
-                            className="w-full h-32 object-cover rounded-lg border"
+                            className="w-full h-48 object-cover"
+                            style={{
+                              width: '100%',
+                              height: '192px',
+                              objectFit: 'cover'
+                            }}
                           />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                            <div className="text-white text-xs">
+                              Main article image
+                            </div>
+                          </div>
                           <Button
                             variant="destructive"
                             size="sm"
@@ -904,10 +1146,12 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                                 (img) => img.url === article.featuredImage
                               );
                               if (cloudinaryImage) {
-                                handleDeleteCloudinaryImage(
-                                  cloudinaryImage.publicId,
-                                  article.featuredImage
-                                );
+                                if (window.confirm("Delete this featured image?")) {
+                                  handleDeleteCloudinaryImage(
+                                    cloudinaryImage.publicId,
+                                    article.featuredImage
+                                  );
+                                }
                               } else {
                                 setArticle((prev) => ({
                                   ...prev,
@@ -918,6 +1162,16 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                          <ImageIcon className="h-12 w-12 mx-auto text-gray-400" />
+                          <p className="text-sm text-gray-500 mt-2">
+                            No featured image selected
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Click Upload to add one
+                          </p>
                         </div>
                       )}
                     </div>
@@ -963,7 +1217,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       <Label htmlFor="excerpt">Excerpt (English)</Label>
                       <Textarea
                         id="excerpt"
-                        placeholder="Brief summary..."
+                        placeholder="Brief summary of the news..."
                         rows={3}
                         value={article.excerpt}
                         onChange={(e) =>
@@ -973,12 +1227,15 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                           }))
                         }
                       />
+                      <div className="text-xs text-muted-foreground">
+                        {article.excerpt.length}/160 characters (for SEO)
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="excerptHi">Excerpt (Hindi)</Label>
                       <Textarea
                         id="excerptHi"
-                        placeholder="संक्षिप्त सारांश..."
+                        placeholder="समाचार का संक्षिप्त सारांश..."
                         rows={3}
                         value={article.excerptHi}
                         onChange={(e) =>
@@ -1111,7 +1368,14 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="showAuthor">Show Author</Label>
+                  <div>
+                    <Label htmlFor="showAuthor" className="cursor-pointer">
+                      Show Author
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Display author name in article header
+                    </p>
+                  </div>
                   <Switch
                     id="showAuthor"
                     checked={article.layoutConfig.showAuthor}
@@ -1128,7 +1392,14 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="showDate">Show Date</Label>
+                  <div>
+                    <Label htmlFor="showDate" className="cursor-pointer">
+                      Show Date
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Display publication date
+                    </p>
+                  </div>
                   <Switch
                     id="showDate"
                     checked={article.layoutConfig.showDate}
@@ -1145,7 +1416,14 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="showCategory">Show Category</Label>
+                  <div>
+                    <Label htmlFor="showCategory" className="cursor-pointer">
+                      Show Category
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Display article category
+                    </p>
+                  </div>
                   <Switch
                     id="showCategory"
                     checked={article.layoutConfig.showCategory}
@@ -1162,7 +1440,14 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="showSocialShare">Show Social Share</Label>
+                  <div>
+                    <Label htmlFor="showSocialShare" className="cursor-pointer">
+                      Show Social Share
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Display social sharing buttons
+                    </p>
+                  </div>
                   <Switch
                     id="showSocialShare"
                     checked={article.layoutConfig.showSocialShare}
@@ -1179,7 +1464,14 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="isBreaking">Breaking News</Label>
+                  <div>
+                    <Label htmlFor="isBreaking" className="cursor-pointer">
+                      Breaking News
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Mark as breaking news with red badge
+                    </p>
+                  </div>
                   <Switch
                     id="isBreaking"
                     checked={article.isBreaking}
@@ -1193,7 +1485,14 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="isFeatured">Featured Article</Label>
+                  <div>
+                    <Label htmlFor="isFeatured" className="cursor-pointer">
+                      Featured Article
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Display on homepage as featured article
+                    </p>
+                  </div>
                   <Switch
                     id="isFeatured"
                     checked={article.isFeatured}
@@ -1215,7 +1514,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       Featured Article Image
                     </Label>
                     <span className="text-xs text-muted-foreground">
-                      Special image for featured articles
+                      800x400px recommended
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -1243,36 +1542,53 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                       />
                     </div>
 
-                    {article.featuredArticleImage && (
-                      <div className="relative mt-2">
+                    {article.featuredArticleImage ? (
+                      <div className="relative mt-2 border rounded-lg overflow-hidden">
                         <img
                           src={article.featuredArticleImage}
                           alt="Featured Article"
-                          className="w-full h-40 object-cover rounded-lg border"
+                          className="w-full h-48 object-cover"
+                          style={{
+                            width: '100%',
+                            height: '192px',
+                            objectFit: 'cover'
+                          }}
                         />
                         <Button
                           variant="destructive"
                           size="sm"
                           className="absolute top-2 right-2"
                           onClick={() => {
-                            const cloudinaryImage = cloudinaryImages.find(
-                              (img) => img.url === article.featuredArticleImage
-                            );
-                            if (cloudinaryImage) {
-                              handleDeleteCloudinaryImage(
-                                cloudinaryImage.publicId,
-                                article.featuredArticleImage
+                            if (window.confirm("Delete this featured article image?")) {
+                              const cloudinaryImage = cloudinaryImages.find(
+                                (img) => img.url === article.featuredArticleImage
                               );
-                            } else {
-                              setArticle((prev) => ({
-                                ...prev,
-                                featuredArticleImage: "",
-                              }));
+                              if (cloudinaryImage) {
+                                handleDeleteCloudinaryImage(
+                                  cloudinaryImage.publicId,
+                                  article.featuredArticleImage
+                                );
+                              } else {
+                                setArticle((prev) => ({
+                                  ...prev,
+                                  featuredArticleImage: "",
+                                }));
+                              }
                             }
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <ImageIcon className="h-10 w-10 mx-auto text-gray-400" />
+                        <p className="text-sm text-gray-500 mt-2">
+                          No featured article image
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Special image for homepage features
+                        </p>
                       </div>
                     )}
 
@@ -1302,10 +1618,10 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="top">Top</SelectItem>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
+                    <SelectItem value="top">Top (Recommended for News)</SelectItem>
+                    <SelectItem value="left">Left (Good for long articles)</SelectItem>
+                    <SelectItem value="right">Right (Balanced layout)</SelectItem>
+                    <SelectItem value="center">Center (Focus on image)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1328,10 +1644,10 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                    <SelectItem value="justify">Justify</SelectItem>
+                    <SelectItem value="left">Left (Easiest to read)</SelectItem>
+                    <SelectItem value="justify">Justify (Clean newspaper style)</SelectItem>
+                    <SelectItem value="center">Center (For short articles)</SelectItem>
+                    <SelectItem value="right">Right (For special layouts)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1340,7 +1656,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 <Label htmlFor="tags">Tags (comma separated)</Label>
                 <Input
                   id="tags"
-                  placeholder="AI, Technology, India"
+                  placeholder="Breaking News, Politics, Technology"
                   value={(article.tags || []).join(", ")}
                   onChange={(e) =>
                     setArticle((prev) => ({
@@ -1349,6 +1665,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     }))
                   }
                 />
+                <p className="text-xs text-muted-foreground">
+                  Use relevant tags to help readers find your article
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -1364,6 +1683,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     }))
                   }
                 />
+                <div className="text-xs text-muted-foreground">
+                  {article.seoTitle.length}/60 characters
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1380,6 +1702,9 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                     }))
                   }
                 />
+                <div className="text-xs text-muted-foreground">
+                  {article.seoDescription.length}/160 characters
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1388,7 +1713,7 @@ export function ArticleEditor({ articleId }: ArticleEditorProps) {
                 </Label>
                 <Input
                   id="seoKeywords"
-                  placeholder="keyword1, keyword2, keyword3"
+                  placeholder="news, headlines, breaking, latest"
                   value={(article.seoKeywords || []).join(", ")}
                   onChange={(e) =>
                     setArticle((prev) => ({

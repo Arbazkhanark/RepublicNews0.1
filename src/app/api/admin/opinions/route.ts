@@ -2,27 +2,25 @@ import { getOpinionModel } from "@/lib/models";
 import { connectToDatabase } from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-type OpinionQuery = {
-  status?: string;
-};
-
-// Add admin auth wrapper
+// Fetch only approved opinions
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
-
-    const query: OpinionQuery = {};
-    if (status) query.status = status;
-
     const Opinion = getOpinionModel();
-    const opinions = await Opinion.find(query).sort({ createdAt: -1 }).limit(100);
-    
+
+    // ✅ Only fetch opinions with status = "approved"
+    const opinions = await Opinion
+      .find({ status: "approved" })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
     return NextResponse.json({ opinions });
   } catch (error) {
-    console.error("Errors in server issue....", error);
-    return NextResponse.json({ error: "Failed to fetch opinions" }, { status: 500 });
+    console.error("Error while fetching approved opinions:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch approved opinions" },
+      { status: 500 }
+    );
   }
 }

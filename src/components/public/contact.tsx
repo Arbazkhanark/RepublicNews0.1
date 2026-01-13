@@ -212,14 +212,14 @@ export default function ContactPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                {/* <div className="flex items-center gap-3">
                   <span className="text-red-600">📞</span>
                   <div>
                     <p className="font-medium text-gray-900">Phone</p>
                     <p className="text-gray-600">+91 96 5323 1654</p>
                     <p className="text-gray-600">+91 87 0004 1771</p>
                   </div>
-                </div>
+                </div> */}
                 <div className="flex items-center gap-3">
                   <span className="text-red-600">📧</span>
                   <div>
@@ -278,21 +278,21 @@ export default function ContactPage() {
                   <span className="font-medium">Facebook</span>
                 </a>
                 <a
-                  href="#"
+                  href="https://x.com/MirrorRepu11808"
                   className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <span className="text-blue-400">🐦</span>
                   <span className="font-medium">Twitter</span>
                 </a>
                 <a
-                  href="#"
+                  href="https://www.instagram.com/republic.mirror?utm_source=qr&igsh=MTdvNmN0ZXk1aTBzcQ"
                   className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <span className="text-pink-600">📷</span>
                   <span className="font-medium">Instagram</span>
                 </a>
                 <a
-                  href="https://youtube.com/@thehashtagnews?si=AGIW8yPpmU4suPUw"
+                  href="https://www.youtube.com/@therepublicmirror"
                   className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <span className="text-red-600">📺</span>

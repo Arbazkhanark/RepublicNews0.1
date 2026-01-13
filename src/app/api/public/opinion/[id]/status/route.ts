@@ -52,5 +52,5 @@ const handleStatusUpdate = async (
   }
 };
 
-export const PATCH = (req: NextRequest, context: { params: Promise<{ id: string }> }) =>
+export const PUT = (req: NextRequest, context: { params: Promise<{ id: string }> }) =>
   withAdminAuth((req, user) => handleStatusUpdate(req, context, user))(req);

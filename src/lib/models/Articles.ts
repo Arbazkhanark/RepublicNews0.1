@@ -1,197 +1,3 @@
-// // models/Article.ts
-// import mongoose, { Schema, type Document } from 'mongoose';
-// import { registerModel } from '../mongodb';
-// import { getUserModel } from "@/lib/models/User";
-
-
-// export interface IArticle extends Document {
-//   title: string;
-//   slug: string;
-//   content: string;
-//   excerpt?: string;
-//   featuredImage?: string;
-//   author: mongoose.Types.ObjectId;
-//   categories: mongoose.Types.ObjectId[];
-//   tags: string[];
-//   status: 'draft' | 'published' | 'archived';
-//   publishedAt?: Date | null;
-//   meta: {
-//     views: number;
-//     likes: number;
-//     shares: number;
-//   };
-//   seoTitle?: string;
-//   seoDescription?: string;
-//   isFeatured: boolean;
-//   isBreaking: boolean;
-//   allowComments: boolean;
-//   createdBy: mongoose.Types.ObjectId;
-//   updatedBy: mongoose.Types.ObjectId;
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
-
-// const ArticleSchema = new Schema<IArticle>(
-//   {
-//     title: { 
-//       type: String, 
-//       required: true,
-//       trim: true,
-//       maxlength: 200
-//     },
-//     slug: { 
-//       type: String, 
-//       required: true,
-//       unique: true,
-//       lowercase: true,
-//       trim: true
-//     },
-//     content: { 
-//       type: String, 
-//       required: true 
-//     },
-//     excerpt: { 
-//       type: String,
-//       maxlength: 300 
-//     },
-//     featuredImage: { 
-//       type: String,
-//       default: null
-//     },
-//     author: { 
-//       type: Schema.Types.ObjectId, 
-//       ref: 'User',
-//       required: true 
-//     },
-//     categories: [{ 
-//       type: Schema.Types.ObjectId, 
-//       ref: 'Category',
-//       required: true 
-//     }],
-//     tags: [{ 
-//       type: String,
-//       trim: true,
-//       lowercase: true
-//     }],
-//     status: { 
-//       type: String, 
-//       enum: ['draft', 'published', 'archived'], 
-//       default: 'draft' 
-//     },
-//     publishedAt: { 
-//       type: Date,
-//       default: null
-//     },
-//     meta: {
-//       views: { type: Number, default: 0 },
-//       likes: { type: Number, default: 0 },
-//       shares: { type: Number, default: 0 }
-//     },
-//     seoTitle: { 
-//       type: String,
-//       maxlength: 200 
-//     },
-//     seoDescription: { 
-//       type: String,
-//       maxlength: 300 
-//     },
-//     isFeatured: { 
-//       type: Boolean, 
-//       default: false 
-//     },
-//     isBreaking: { 
-//       type: Boolean, 
-//       default: false 
-//     },
-//     allowComments: { 
-//       type: Boolean, 
-//       default: true 
-//     },
-//     createdBy: { 
-//       type: Schema.Types.ObjectId, 
-//       ref: 'User',
-//       required: true 
-//     },
-//     updatedBy: { 
-//       type: Schema.Types.ObjectId, 
-//       ref: 'User',
-//       required: true 
-//     },
-//   },
-//   { 
-//     timestamps: true 
-//   }
-// );
-
-// // Indexes
-// // ArticleSchema.index({ slug: 1 }, { unique: true });
-// ArticleSchema.index({ author: 1 });
-// ArticleSchema.index({ categories: 1 });
-// ArticleSchema.index({ status: 1 });
-// ArticleSchema.index({ publishedAt: -1 });
-// ArticleSchema.index({ isFeatured: 1 });
-// ArticleSchema.index({ isBreaking: 1 });
-// ArticleSchema.index({ 'meta.views': -1 });
-// ArticleSchema.index({ 'meta.likes': -1 });
-// ArticleSchema.index({ tags: 1 });
-// ArticleSchema.index({ createdAt: -1 });
-
-// // Virtual for reading time
-// ArticleSchema.virtual('readingTime').get(function(this: IArticle) {
-//   const wordsPerMinute = 200;
-//   const wordCount = this.content.split(/\s+/).length;
-//   return Math.ceil(wordCount / wordsPerMinute);
-// });
-
-// // Virtual for featured image URL
-// ArticleSchema.virtual('featuredImageURL').get(function(this: IArticle) {
-//   return this.featuredImage ? `/uploads/articles/${this.featuredImage}` : '/images/default-article.jpg';
-// });
-
-// // Pre-save middleware
-// ArticleSchema.pre('save', function(next) {
-//   if (this.isModified('title')) {
-//     this.slug = this.title
-//       .toLowerCase()
-//       .replace(/[^a-zA-Z0-9 ]/g, '')
-//       .replace(/\s+/g, '-');
-//   }
-
-//   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
-//     this.publishedAt = new Date();
-//   }
-
-//   // Auto-generate excerpt from content if not provided
-//   if (!this.excerpt && this.content) {
-//     this.excerpt = this.content.substring(0, 150) + '...';
-//   }
-
-//   next();
-// });
-
-// // export const Article = registerModel<IArticle>('Article', ArticleSchema);
-
-// export function getArticleModel() {
-//   return registerModel<IArticle>('Article', ArticleSchema);
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import mongoose, { Schema, type Document } from 'mongoose';
 import { registerModel } from '../mongodb';
 
@@ -220,6 +26,14 @@ export interface ICloudinaryImage {
   uploadedAt: Date;
 }
 
+// NEW: Interface for tracking user interactions
+export interface IUserInteraction {
+  userId: mongoose.Types.ObjectId;
+  ipAddress?: string;
+  timestamp: Date;
+  platform?: string; // 'facebook', 'twitter', 'whatsapp', 'linkedin', etc.
+}
+
 export interface IArticle extends Document {
   // Basic Information
   title: string;
@@ -240,7 +54,6 @@ export interface IArticle extends Document {
 
   // Categorization
   category: mongoose.Types.ObjectId;
-  // categories?: mongoose.Types.ObjectId[];
   tags: string[];
 
   // Source Information
@@ -276,10 +89,22 @@ export interface IArticle extends Document {
     comments: number;
   };
 
+  // NEW: Tracking arrays for duplicate prevention
+  viewedBy: IUserInteraction[];
+  likedBy: IUserInteraction[];
+  sharedBy: IUserInteraction[];
+
   // System
   allowComments: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  // Instance methods
+  incrementView: (userId: string, ipAddress?: string) => Promise<IArticle>;
+  incrementLike: (userId: string, ipAddress?: string) => Promise<{ success: boolean; message: string; article: IArticle }>;
+  incrementShare: (userId: string, platform: string, ipAddress?: string) => Promise<{ success: boolean; message: string; article: IArticle }>;
+  addComment: () => Promise<IArticle>;
+  removeLike: (userId: string) => Promise<{ success: boolean; message: string; article: IArticle }>;
 }
 
 const SourcePersonSocialSchema = new Schema<ISourcePersonSocial>({
@@ -329,6 +154,28 @@ const CloudinaryImageSchema = new Schema<ICloudinaryImage>({
   uploadedAt: {
     type: Date,
     default: Date.now
+  }
+}, { _id: false });
+
+// NEW: Schema for tracking user interactions
+const UserInteractionSchema = new Schema<IUserInteraction>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  ipAddress: {
+    type: String,
+    trim: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  platform: {
+    type: String,
+    trim: true,
+    lowercase: true
   }
 }, { _id: false });
 
@@ -404,10 +251,6 @@ const ArticleSchema = new Schema<IArticle>(
       ref: 'Category',
       required: true
     },
-    // categories: [{ 
-    //   type: Schema.Types.ObjectId, 
-    //   ref: 'Category'
-    // }],
     tags: [{
       type: String,
       trim: true,
@@ -506,6 +349,20 @@ const ArticleSchema = new Schema<IArticle>(
       comments: { type: Number, default: 0 }
     },
 
+    // NEW: Tracking arrays for duplicate prevention
+    viewedBy: {
+      type: [UserInteractionSchema],
+      default: []
+    },
+    likedBy: {
+      type: [UserInteractionSchema],
+      default: []
+    },
+    sharedBy: {
+      type: [UserInteractionSchema],
+      default: []
+    },
+
     // System
     allowComments: {
       type: Boolean,
@@ -514,16 +371,13 @@ const ArticleSchema = new Schema<IArticle>(
   },
   {
     timestamps: true,
-    // strictPopulate: false 
   }
 );
 
 // Indexes
-// ArticleSchema.index({ slug: 1 }, { unique: true });
 ArticleSchema.index({ title: 'text', subtitle: 'text', content: 'text', titleHi: 'text', contentHi: 'text' });
 ArticleSchema.index({ author: 1 });
 ArticleSchema.index({ category: 1 });
-// ArticleSchema.index({ categories: 1 });
 ArticleSchema.index({ status: 1 });
 ArticleSchema.index({ isBreaking: 1 });
 ArticleSchema.index({ isFeatured: 1 });
@@ -535,6 +389,10 @@ ArticleSchema.index({ createdAt: -1 });
 ArticleSchema.index({ publishedAt: -1 });
 ArticleSchema.index({ scheduledAt: -1 });
 ArticleSchema.index({ 'cloudinaryImages.publicId': 1 });
+// NEW: Indexes for tracking
+ArticleSchema.index({ 'viewedBy.userId': 1 });
+ArticleSchema.index({ 'likedBy.userId': 1 });
+ArticleSchema.index({ 'sharedBy.userId': 1 });
 
 // Virtuals
 ArticleSchema.virtual('readingTime').get(function (this: IArticle) {
@@ -544,7 +402,7 @@ ArticleSchema.virtual('readingTime').get(function (this: IArticle) {
 });
 
 ArticleSchema.virtual('readingTimeHi').get(function (this: IArticle) {
-  const wordsPerMinute = 150; // Hindi reading is slightly slower
+  const wordsPerMinute = 150;
   const wordCount = this.contentHi.split(/\s+/).length;
   return Math.ceil(wordCount / wordsPerMinute);
 });
@@ -554,7 +412,6 @@ ArticleSchema.virtual('featuredImageURL').get(function (this: IArticle) {
     return this.featuredImage;
   }
 
-  // Check cloudinary images for featured image
   const cloudinaryFeatured = this.cloudinaryImages.find(img => img.isFeaturedImage);
   if (cloudinaryFeatured) {
     return cloudinaryFeatured.url;
@@ -568,7 +425,6 @@ ArticleSchema.virtual('featuredArticleImageURL').get(function (this: IArticle) {
     return this.featuredArticleImage;
   }
 
-  // Check cloudinary images for featured article image
   const cloudinaryFeaturedArticle = this.cloudinaryImages.find(img => img.isFeaturedArticleImage);
   if (cloudinaryFeaturedArticle) {
     return cloudinaryFeaturedArticle.url;
@@ -588,7 +444,6 @@ ArticleSchema.virtual('optimizedImages').get(function (this: IArticle) {
 
 // Pre-save middleware
 ArticleSchema.pre('save', function (next) {
-  // Generate slug from English title
   if (this.isModified('title') && !this.isModified('slug')) {
     const baseSlug = this.title
       .toLowerCase()
@@ -596,17 +451,14 @@ ArticleSchema.pre('save', function (next) {
       .replace(/\s+/g, '-')
       .substring(0, 100);
 
-    // Add timestamp to ensure uniqueness
     const timestamp = Date.now().toString().slice(-6);
     this.slug = `${baseSlug}-${timestamp}`;
   }
 
-  // Handle publishedAt
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
   }
 
-  // Auto-generate excerpt if not provided
   if (!this.excerpt && this.content) {
     this.excerpt = this.content.substring(0, 150) + (this.content.length > 150 ? '...' : '');
   }
@@ -615,7 +467,6 @@ ArticleSchema.pre('save', function (next) {
     this.excerptHi = this.contentHi.substring(0, 150) + (this.contentHi.length > 150 ? '...' : '');
   }
 
-  // Auto-generate SEO fields if not provided
   if (!this.seoTitle && this.title) {
     this.seoTitle = this.title.substring(0, 60);
   }
@@ -624,46 +475,25 @@ ArticleSchema.pre('save', function (next) {
     this.seoDescription = this.excerpt.substring(0, 160);
   }
 
-  // Handle scheduled articles
   if (this.scheduledAt && new Date(this.scheduledAt) > new Date()) {
     this.status = 'scheduled';
   }
 
-  // Ensure categories array includes main category
-  // if (this.category && (!this.categories || this.categories.length === 0)) {
-  //   this.categories = [this.category];
-  // } 
-  // else if (this.category && this.categories && !this.categories.includes(this.category)) {
-  //   this.categories.push(this.category);
-  // }
-
-  // Update updatedBy (you'll need to set this from your auth middleware)
   next();
 });
 
-// Post-save middleware for cleanup
+// Post-save middleware
 ArticleSchema.post('save', function (doc: IArticle) {
-  // You can add any post-save logic here
   console.log(`Article saved: ${doc.title}`);
 });
 
 // Static methods
-// ArticleSchema.statics.findBySlug = function(slug: string) {
-//   return this.findOne({ slug }).populate('author category categories createdBy updatedBy');
-// };
-
-// ArticleSchema.statics.findPublished = function() {
-//   return this.find({ status: 'published' })
-//     .populate('author category categories')
-//     .sort({ publishedAt: -1 });
-// };
-
 ArticleSchema.statics.findFeatured = function () {
   return this.find({
     status: 'published',
     isFeatured: true
   })
-    .populate('author category categories')
+    .populate('author category')
     .sort({ publishedAt: -1 });
 };
 
@@ -677,20 +507,114 @@ ArticleSchema.statics.findBreaking = function () {
     .limit(5);
 };
 
-// Instance methods
-ArticleSchema.methods.incrementView = async function () {
-  this.meta.views += 1;
+// Instance methods with duplicate prevention
+ArticleSchema.methods.incrementView = async function (userId: string, ipAddress?: string) {
+  // Check if user has already viewed (within last 24 hours for views)
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const alreadyViewed = this.viewedBy.some((view: IUserInteraction) => 
+    view.userId.toString() === userId && 
+    new Date(view.timestamp) > oneDayAgo
+  );
+
+  if (!alreadyViewed) {
+    this.viewedBy.push({
+      userId: new mongoose.Types.ObjectId(userId),
+      ipAddress,
+      timestamp: new Date()
+    });
+    this.meta.views += 1;
+  }
+
   return this.save();
 };
 
-ArticleSchema.methods.incrementLike = async function () {
+ArticleSchema.methods.incrementLike = async function (userId: string, ipAddress?: string) {
+  // Check if user has already liked
+  const alreadyLiked = this.likedBy.some((like: IUserInteraction) => 
+    like.userId.toString() === userId
+  );
+
+  if (alreadyLiked) {
+    return {
+      success: false,
+      message: 'You have already liked this article',
+      article: this
+    };
+  }
+
+  this.likedBy.push({
+    userId: new mongoose.Types.ObjectId(userId),
+    ipAddress,
+    timestamp: new Date()
+  });
   this.meta.likes += 1;
-  return this.save();
+
+  await this.save();
+
+  return {
+    success: true,
+    message: 'Article liked successfully',
+    article: this
+  };
 };
 
-ArticleSchema.methods.incrementShare = async function () {
+ArticleSchema.methods.removeLike = async function (userId: string) {
+  const likeIndex = this.likedBy.findIndex((like: IUserInteraction) => 
+    like.userId.toString() === userId
+  );
+
+  if (likeIndex === -1) {
+    return {
+      success: false,
+      message: 'You have not liked this article',
+      article: this
+    };
+  }
+
+  this.likedBy.splice(likeIndex, 1);
+  this.meta.likes = Math.max(0, this.meta.likes - 1);
+
+  await this.save();
+
+  return {
+    success: true,
+    message: 'Like removed successfully',
+    article: this
+  };
+};
+
+ArticleSchema.methods.incrementShare = async function (userId: string, platform: string, ipAddress?: string) {
+  // Check if user has already shared on this platform (within last hour to prevent spam)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const alreadyShared = this.sharedBy.some((share: IUserInteraction) => 
+    share.userId.toString() === userId && 
+    share.platform === platform.toLowerCase() &&
+    new Date(share.timestamp) > oneHourAgo
+  );
+
+  if (alreadyShared) {
+    return {
+      success: false,
+      message: `You have already shared this article on ${platform} recently`,
+      article: this
+    };
+  }
+
+  this.sharedBy.push({
+    userId: new mongoose.Types.ObjectId(userId),
+    ipAddress,
+    timestamp: new Date(),
+    platform: platform.toLowerCase()
+  });
   this.meta.shares += 1;
-  return this.save();
+
+  await this.save();
+
+  return {
+    success: true,
+    message: 'Article shared successfully',
+    article: this
+  };
 };
 
 ArticleSchema.methods.addComment = async function () {
@@ -701,5 +625,3 @@ ArticleSchema.methods.addComment = async function () {
 export function getArticleModel() {
   return registerModel<IArticle>('Article', ArticleSchema);
 }
-
-

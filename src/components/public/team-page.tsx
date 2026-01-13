@@ -65,8 +65,8 @@ const TeamPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const departments = [
-    { id: "all", label: "All Departments", count: 45 },
-    { id: "editorial", label: "Editorial", count: 12 },
+    { id: "all", label: "All Departments", count: 47 },
+    { id: "editorial", label: "Editorial", count: 14 },
     { id: "factcheck", label: "Fact-Check", count: 8 },
     { id: "technology", label: "Technology", count: 10 },
     { id: "research", label: "Research", count: 6 },
@@ -76,39 +76,6 @@ const TeamPage = () => {
 
   const teamMembers = [
     // Leadership Team
-    {
-      id: 1,
-      name: "Rajesh Kumar",
-      nameHi: "राजेश कुमार",
-      role: "Editor-in-Chief",
-      roleHi: "संपादक-इन-चीफ",
-      department: "editorial",
-      experience: "15+ years",
-      education: "MA Journalism, Delhi University",
-      expertise: [
-        "Political Journalism",
-        "Investigative Reporting",
-        "Editorial Strategy",
-      ],
-      bio: "Former editor at Times of India, award-winning journalist with 15+ years of experience in political journalism.",
-      bioHi:
-        "टाइम्स ऑफ इंडिया के पूर्व संपादक, पुरस्कार विजेता पत्रकार जिन्हें राजनीतिक पत्रकारिता में 15+ वर्षों का अनुभव है।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh",
-      email: "rajesh@republicmirror.com",
-      phone: "+91 98765 43210",
-      social: {
-        twitter: "@rajeshkumar",
-        linkedin: "rajeshkumar",
-        instagram: "rajesh_kumar",
-      },
-      achievements: [
-        "Ramon Magsaysay Award",
-        "Padma Shri",
-        "Best Editor Award",
-      ],
-      isLeadership: true,
-      joinDate: "2021-01-15",
-    },
     {
       id: 2,
       name: "Priya Sharma",
@@ -170,6 +137,74 @@ const TeamPage = () => {
       ],
       isLeadership: true,
       joinDate: "2021-02-20",
+    },
+    {
+      id: 9,
+      name: "Mohammad Uwais Siddiqui",
+      nameHi: "मुहम्मद उवैस सिद्दीक़ी",
+      role: "Chief Editor",
+      roleHi: "मुख्य संपादक",
+      department: "editorial",
+      experience: "8+ years",
+      education: "Journalism, Jamia Millia Islamia, Delhi",
+      expertise: [
+        "Multimedia Journalism",
+        "Political Reporting",
+        "Social Issues",
+        "Ground Reporting",
+      ],
+      bio: "A multimedia journalist specializing in connecting stories from the ground. Graduate in Political Science from Mumbai University, followed by journalism from Jamia Millia Islamia. Passionate about social and political journalism.",
+      bioHi:
+        "एक मल्टीमीडिया पत्रकार हैं, जो कहानियों को ज़मीन से जोड़कर पेश करने में माहिर हैं. मुंबई विश्वविद्यालय से राजनीति विज्ञान में स्नातक करने के बाद जामिया मिलिया इस्लामिया विश्वविद्यालय, दिल्ली से पत्रकारिता की पढ़ाई की. सामाजिक और राजनीतिक मुद्दों पर पत्रकारिता करना, ग्राउंड रिपोर्टिंग में विशेष रुचि रखते हैं।",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Uwais",
+      email: "uwais@republicmirror.com",
+      phone: "+91 98765 43218",
+      social: {
+        twitter: "@uwaisjournalist",
+        linkedin: "uwais-siddiqui",
+        instagram: "uwais_siddiqui",
+      },
+      achievements: [
+        "Best Multimedia Storytelling",
+        "Ground Reporting Excellence",
+        "Social Impact Award",
+      ],
+      isLeadership: true,
+      joinDate: "2021-06-15",
+    },
+    {
+      id: 10,
+      name: "Waseem Ahmed",
+      nameHi: "वसीम अहमद",
+      role: "Consulting Editor",
+      roleHi: "परामर्श संपादक",
+      department: "editorial",
+      experience: "10+ years",
+      education: "Journalism, Jamia Millia Islamia, Delhi",
+      expertise: [
+        "Political Analysis",
+        "Social Issues",
+        "Opinion Writing",
+        "Research",
+      ],
+      bio: "Graduated in Political Science from Delhi University, followed by journalism from Jamia Millia Islamia. Experienced in ground reporting. Avid reader and writer with deep interest in social and political issues.",
+      bioHi:
+        "दिल्ली विश्वविद्यालय से पॉलिटिकल साइंस में ग्रेजुएशन के बाद जामिया मिलिया इस्लामिया से पत्रकारिता की पढ़ाई। ज़मीन पर रिपोर्टिंग का अनुभव। पढ़ने-लिखने का शौक, सामाजिक और राजनीति मुद्दों में गहरी रुचि।",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Waseem",
+      email: "waseem@republicmirror.com",
+      phone: "+91 98765 43219",
+      social: {
+        twitter: "@waseemeditor",
+        linkedin: "waseem-ahmed",
+        instagram: "waseem_ahmed",
+      },
+      achievements: [
+        "Political Commentary Award",
+        "Social Issues Reporting",
+        "Editorial Excellence",
+      ],
+      isLeadership: true,
+      joinDate: "2021-04-20",
     },
     // Fact-Check Team
     {
@@ -356,7 +391,7 @@ const TeamPage = () => {
   );
 
   const departmentStats = {
-    editorial: 12,
+    editorial: 14,
     factcheck: 8,
     technology: 10,
     research: 6,
@@ -367,7 +402,7 @@ const TeamPage = () => {
   const teamStats = [
     {
       label: language === "hi" ? "कुल टीम सदस्य" : "Total Team Members",
-      value: "45+",
+      value: "47+",
       icon: Users,
     },
     {
@@ -549,7 +584,7 @@ const TeamPage = () => {
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {teamMembers
               .filter((member) => member.isLeadership)
               .map((member) => (
@@ -559,56 +594,52 @@ const TeamPage = () => {
                 >
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center text-center">
-                      <Avatar className="h-32 w-32 mb-4 border-4 border-red-100">
-                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-2xl">
+                      <Avatar className="h-28 w-28 mb-4 border-4 border-red-100">
+                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xl">
                           {member.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
 
                       <div className="mb-4">
-                        <h3 className="font-bold text-xl mb-1">
+                        <h3 className="font-bold text-lg mb-1 truncate w-full">
                           {language === "hi" ? member.nameHi : member.name}
                         </h3>
-                        <Badge className="bg-red-100 text-red-700 border-red-200 mb-2">
+                        <Badge className="bg-red-100 text-red-700 border-red-200 mb-2 text-xs">
                           {language === "hi" ? member.roleHi : member.role}
                         </Badge>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs text-gray-600">
                           {member.experience}
                         </p>
                       </div>
 
-                      <div className="w-full space-y-3 mb-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Briefcase className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">
+                      <div className="w-full space-y-2 mb-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <Briefcase className="h-3 w-3 text-gray-400" />
+                          <span className="text-xs">
                             {language === "hi" ? "विभाग:" : "Department:"}{" "}
                             {member.department}
                           </span>
                         </div>
-                        <div className="flex items-center justify-center gap-2">
-                          <GraduationCap className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{member.education}</span>
-                        </div>
                       </div>
 
-                      <div className="flex gap-2 mb-4">
+                      <div className="flex flex-wrap gap-1 mb-3 justify-center">
                         {member.expertise.slice(0, 2).map((exp, idx) => (
                           <Badge
                             key={idx}
                             variant="outline"
-                            className="text-xs"
+                            className="text-xs px-1"
                           >
-                            {exp}
+                            {exp.split(" ")[0]}
                           </Badge>
                         ))}
                       </div>
 
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="gap-1">
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="gap-1 text-xs">
                           <Mail className="h-3 w-3" />
                           Email
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1">
+                        <Button size="sm" variant="outline" className="gap-1 text-xs">
                           <MessageSquare className="h-3 w-3" />
                           {language === "hi" ? "प्रोफाइल" : "Profile"}
                         </Button>

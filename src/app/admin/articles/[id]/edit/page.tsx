@@ -1,3 +1,4 @@
+import { AdminLayout } from "@/components/admin/admin-layout";
 import { ArticleEditor } from "@/components/admin/article-editor";
 
 interface EditArticlePageProps {
@@ -13,13 +14,15 @@ export default async function EditArticlePage({
   const { id } = await params;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Edit Article</h1>
-        <p className="text-muted-foreground">Update your news article</p>
-      </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Edit Article</h1>
+          <p className="text-muted-foreground">Update your news article</p>
+        </div>
 
-      <ArticleEditor articleId={id} />
-    </div>
+        <ArticleEditor articleId={id} />
+      </div>
+    </AdminLayout>
   );
 }

@@ -19,13 +19,17 @@ import {
   Eye,
   ThumbsUp,
   Send,
+  AlertCircle,
+  CheckCircle,
+  Minus,
+  Maximize2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { PublicHeader } from "@/components/public/header";
 import { PublicFooter } from "@/components/public/footer";
 import Image from "next/image";
 import { GoogleAdSense } from "@/components/public/google-adsense";
-// import { GoogleAdSense } from '@/components/google-adsense'; // Import your GoogleAdSense component
+import { toast } from "sonner";
 
 interface Category {
   _id: string;
@@ -73,8 +77,8 @@ interface Article {
   excerpt: string;
   slug: string;
   slugHi: string;
-  categories: Category[]; // Updated from categoryId to categories (array)
-  author: Author; // Updated from authorId to author
+  categories: Category[];
+  author: Author;
   featuredImage: string;
   mediaUrls: string[];
   sourcePersonName: string;
@@ -133,6 +137,7 @@ const ArticlePage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likes, setLikes] = useState(0);
   const [views, setViews] = useState(0);
+  const [shares, setShares] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [comment, setComment] = useState("");
   const [readingProgress, setReadingProgress] = useState(0);
@@ -143,6 +148,49 @@ const ArticlePage = () => {
   const [error, setError] = useState<string | null>(null);
   const params = useParams();
   const articleId = params.id as string;
+
+  // Check if user has already viewed this article in this session
+  const hasViewedArticle = () => {
+    if (typeof window === "undefined") return false;
+    const viewedArticles = JSON.parse(sessionStorage.getItem("viewedArticles") || "[]");
+    return viewedArticles.includes(articleId);
+  };
+
+  // Check if user has liked this article
+  const checkIfLiked = () => {
+    if (typeof window === "undefined") return false;
+    const likedArticles = JSON.parse(sessionStorage.getItem("likedArticles") || "[]");
+    return likedArticles.includes(articleId);
+  };
+
+  // Record article view once per session
+  const recordView = async () => {
+    if (!articleId || hasViewedArticle()) return;
+
+    try {
+      const response = await fetch(`/api/news/${articleId}/view/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Store in session storage to prevent duplicate views
+          const viewedArticles = JSON.parse(sessionStorage.getItem("viewedArticles") || "[]");
+          viewedArticles.push(articleId);
+          sessionStorage.setItem("viewedArticles", JSON.stringify(viewedArticles));
+          
+          // Update view count
+          setViews(data.data.views);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to record view:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -160,13 +208,19 @@ const ArticlePage = () => {
           setArticle(data.data);
           setLikes(data.data.meta?.likes || 0);
           setViews(data.data.meta?.views || 0);
+          setShares(data.data.meta?.shares || 0);
+          
+          // Check if user has already liked this article
+          const liked = checkIfLiked();
+          setIsLiked(liked);
+
+          // Record view if not already viewed in this session
+          await recordView();
+
+          // Fetch related articles after main article is loaded
+          await fetchRelatedArticles(data.data);
         } else {
           throw new Error("Invalid response format");
-        }
-
-        // Fetch related articles after main article is loaded
-        if (data.data) {
-          await fetchRelatedArticles(data.data);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -184,18 +238,15 @@ const ArticlePage = () => {
     try {
       setRelatedLoading(true);
 
-      // Build query parameters for related articles
       const searchParams = new URLSearchParams({
         page: "1",
         limit: "3",
       });
 
-      // Use first category for related articles
       if (currentArticle.categories && currentArticle.categories.length > 0) {
         searchParams.append("category", currentArticle.categories[0]._id);
       }
 
-      // Optional: Add search term if you want to search by title/content
       if (currentArticle.title) {
         searchParams.append(
           "search",
@@ -212,7 +263,6 @@ const ArticlePage = () => {
       const data: ArticlesResponse = await response.json();
 
       if (data.success && data.data) {
-        // Filter out the current article and limit to 3 articles
         const filteredArticles = data.data.articles
           .filter((relatedArticle) => relatedArticle._id !== currentArticle._id)
           .slice(0, 3);
@@ -221,7 +271,6 @@ const ArticlePage = () => {
       }
     } catch (err) {
       console.error("Error fetching related articles:", err);
-      // You can set a fallback or leave related articles empty
     } finally {
       setRelatedLoading(false);
     }
@@ -244,58 +293,127 @@ const ArticlePage = () => {
     if (!article) return;
 
     const newLikedState = !isLiked;
-    setIsLiked(newLikedState);
-    setLikes((prev) => (newLikedState ? prev + 1 : prev - 1));
+    const currentLikedArticles = JSON.parse(sessionStorage.getItem("likedArticles") || "[]");
 
     try {
-      await fetch(`/api/news/${article._id}/like`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ liked: newLikedState }),
-      });
+      if (newLikedState) {
+        // Like the article
+        const response = await fetch(`/api/news/${article._id}/like`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setIsLiked(true);
+            setLikes(data.data.likes);
+            
+            // Store in session storage
+            if (!currentLikedArticles.includes(article._id)) {
+              currentLikedArticles.push(article._id);
+              sessionStorage.setItem("likedArticles", JSON.stringify(currentLikedArticles));
+            }
+            
+            toast.success("Article liked successfully!");
+          }
+        }
+      } else {
+        // Unlike the article
+        const response = await fetch(`/api/news/${article._id}/like`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setIsLiked(false);
+            setLikes(data.data.likes || likes - 1);
+            
+            // Remove from session storage
+            const updatedLikedArticles = currentLikedArticles.filter((id: string) => id !== article._id);
+            sessionStorage.setItem("likedArticles", JSON.stringify(updatedLikedArticles));
+            
+            toast.success("Article unliked!");
+          }
+        }
+      }
     } catch (error) {
-      // Revert on error
-      setIsLiked(!newLikedState);
-      setLikes((prev) => (newLikedState ? prev - 1 : prev + 1));
       console.error("Failed to update like:", error);
+      toast.error("Failed to update like status. Please try again.");
     }
   };
 
-  const handleShare = (platform: string) => {
+  const handleShare = async (platform: string) => {
     if (!article) return;
 
     const url = window.location.href;
     const text = article.title;
 
-    switch (platform) {
-      case "twitter":
-        window.open(
-          `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            text
-          )}&url=${encodeURIComponent(url)}`
-        );
-        break;
-      case "facebook":
-        window.open(
-          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-            url
-          )}`
-        );
-        break;
-      case "linkedin":
-        window.open(
-          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-            url
-          )}`
-        );
-        break;
-      case "copy":
-        navigator.clipboard.writeText(url);
-        break;
+    try {
+      // Record share in backend
+      const shareResponse = await fetch(`/api/news/${article._id}/share`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ platform }),
+      });
+
+      if (shareResponse.ok) {
+        const shareData = await shareResponse.json();
+        if (shareData.success) {
+          setShares(shareData.data.shares || shares + 1);
+          toast.success(`Shared on ${platform}!`);
+        }
+      }
+
+      // Open share dialog
+      switch (platform) {
+        case "twitter":
+          window.open(
+            `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+              text
+            )}&url=${encodeURIComponent(url)}`
+          );
+          break;
+        case "facebook":
+          window.open(
+            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+              url
+            )}`
+          );
+          break;
+        case "linkedin":
+          window.open(
+            `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+              url
+            )}`
+          );
+          break;
+        case "whatsapp":
+          window.open(
+            `https://api.whatsapp.com/send?text=${encodeURIComponent(
+              `${text} ${url}`
+            )}`
+          );
+          break;
+        case "copy":
+          navigator.clipboard.writeText(url);
+          toast.success("Link copied to clipboard!");
+          break;
+      }
+    } catch (error) {
+      console.error("Failed to share:", error);
+      toast.error("Failed to record share. Please try again.");
+    } finally {
+      setShowShareMenu(false);
     }
-    setShowShareMenu(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -309,14 +427,83 @@ const ArticlePage = () => {
   };
 
   const formatContent = (content: string) => {
-    return content
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/\n/g, "<br>");
+    if (!content) return "";
+    
+    let html = content;
+    
+    // 1. First handle images properly - they are stored as [IMAGE:url]
+    html = html.replace(/\[IMAGE:(.*?)\]/g, (match, url) => {
+      // Clean URL from any spaces
+      const cleanUrl = url.trim();
+      return `<div class="my-6 text-center">
+                <div class="max-w-2xl mx-auto">
+                  <img src="${cleanUrl}" alt="News Image" class="w-full h-auto rounded-lg shadow-md mx-auto" style="max-width: 600px; height: auto; max-height: 400px; object-fit: contain;"/>
+                </div>
+              </div>`;
+    });
+    
+    // 2. Handle captions
+    html = html.replace(/\[CAPTION:(.*?)\]/g, (match, caption) => {
+      return `<p class="text-center text-sm text-gray-500 italic mt-2">${caption}</p>`;
+    });
+    
+    // 3. Handle special templates from rich editor
+    html = html.replace(/\[LEAD PARAGRAPH:(.*?)\]/g, (match, text) => {
+      return `<div class="bg-blue-50 border-l-4 border-blue-500 p-4 my-4">
+                <p class="font-bold text-blue-700 mb-1">Lead Paragraph:</p>
+                <p class="text-gray-800">${text}</p>
+              </div>`;
+    });
+    
+    html = html.replace(/\[KEY FACT:(.*?)\]/g, (match, text) => {
+      return `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 my-4">
+                <p class="font-bold text-yellow-700 mb-1">Key Fact:</p>
+                <p class="text-gray-800">${text}</p>
+              </div>`;
+    });
+    
+    html = html.replace(/\[QUOTE:(.*?)\]/g, (match, text) => {
+      return `<div class="bg-gray-50 border-l-4 border-gray-400 p-4 my-4 italic">
+                <p class="text-gray-700">"${text}"</p>
+              </div>`;
+    });
+    
+    html = html.replace(/\[IMPACT:(.*?)\]/g, (match, text) => {
+      return `<div class="bg-green-50 border-l-4 border-green-500 p-4 my-4">
+                <p class="font-bold text-green-700 mb-1">Impact:</p>
+                <p class="text-gray-800">${text}</p>
+              </div>`;
+    });
+    
+    html = html.replace(/\[WHAT'S NEXT:(.*?)\]/g, (match, text) => {
+      return `<div class="bg-purple-50 border-l-4 border-purple-500 p-4 my-4">
+                <p class="font-bold text-purple-700 mb-1">What's Next:</p>
+                <p class="text-gray-800">${text}</p>
+              </div>`;
+    });
+    
+    // 4. Convert markdown to HTML
+    html = html
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+      .replace(/__(.*?)__/g, '<u class="underline">$1</u>')
+      .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mt-6 mb-4 text-gray-900">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-5 mb-3 text-gray-800">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold mt-4 mb-2 text-gray-700">$1</h3>')
+      .replace(/^- (.*$)/gm, '<li class="ml-6 list-disc">$1</li>')
+      .replace(/^1\. (.*$)/gm, '<li class="ml-6 list-decimal">$1</li>')
+      .replace(/> (.*$)/gm, '<blockquote class="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">$1</blockquote>')
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/\n/g, '<br>')
+      .replace(/---/g, '<hr class="my-6 border-gray-300">');
+    
+    // 5. Handle paragraph breaks properly
+    html = html.replace(/<br><br>/g, '</p><p class="mt-4">');
+    
+    return `<div class="article-content">${html}</div>`;
   };
 
   const handleRelatedArticleClick = (slug: string) => {
-    // Navigate to the related article
     window.location.href = `/article/${slug}`;
   };
 
@@ -347,7 +534,6 @@ const ArticlePage = () => {
     );
   }
 
-  // Get first category for display
   const mainCategory =
     article.categories && article.categories.length > 0
       ? article.categories[0]
@@ -355,7 +541,6 @@ const ArticlePage = () => {
           _id: "",
           name: "Uncategorized",
           slug: "uncategorized",
-          color: "#6b7280",
         };
 
   return (
@@ -377,31 +562,40 @@ const ArticlePage = () => {
                 {article.layoutConfig?.showCategory && (
                   <Badge
                     variant="secondary"
-                    className="text-primary-foreground"
-                    style={{ backgroundColor: "#3b82f6" }} // Default blue color
+                    className="text-white px-3 py-1 text-sm"
+                    style={{ backgroundColor: "#3b82f6" }}
                   >
                     {mainCategory.name}
                   </Badge>
                 )}
 
-                <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-foreground">
+                <h1 className="text-3xl lg:text-4xl font-bold leading-tight text-gray-900">
                   {article.title}
                 </h1>
+
+                {article.subtitle && (
+                  <h2 className="text-xl text-gray-600 italic">
+                    {article.subtitle}
+                  </h2>
+                )}
 
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   {article.layoutConfig?.showAuthor && article.author && (
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={article.author.profileImage || ""} />
-                        <AvatarFallback>
+                        <AvatarImage 
+                          src={article.author.profileImage || ""} 
+                          alt={article.author.name}
+                        />
+                        <AvatarFallback className="bg-blue-100 text-blue-600">
                           {article.author.name?.charAt(0) || "A"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-foreground">
+                        <p className="font-semibold text-gray-900">
                           {article.author.name}
                         </p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
                           {article.layoutConfig?.showDate && (
                             <>
                               <Clock className="h-4 w-4" />
@@ -414,6 +608,9 @@ const ArticlePage = () => {
                           <span>•</span>
                           <Heart className="h-4 w-4" />
                           <span>{likes} likes</span>
+                          <span>•</span>
+                          <Share2 className="h-4 w-4" />
+                          <span>{shares} shares</span>
                         </div>
                       </div>
                     </div>
@@ -426,7 +623,7 @@ const ArticlePage = () => {
                         variant="ghost"
                         size="sm"
                         onClick={handleLike}
-                        className={`gap-2 ${isLiked ? "text-red-500" : ""}`}
+                        className={`gap-2 ${isLiked ? "text-red-500 hover:text-red-600" : "text-gray-600"}`}
                       >
                         <Heart
                           className={`h-4 w-4 ${isLiked ? "fill-current" : ""}`}
@@ -438,7 +635,7 @@ const ArticlePage = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => setIsBookmarked(!isBookmarked)}
-                        className={isBookmarked ? "text-primary" : ""}
+                        className={isBookmarked ? "text-primary hover:text-primary" : "text-gray-600"}
                       >
                         <Bookmark
                           className={`h-4 w-4 ${
@@ -452,20 +649,20 @@ const ArticlePage = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowShareMenu(!showShareMenu)}
-                          className="gap-2"
+                          className="gap-2 text-gray-600"
                         >
                           <Share2 className="h-4 w-4" />
                           Share
                         </Button>
 
                         {showShareMenu && (
-                          <Card className="absolute right-0 mt-2 w-48 z-10">
+                          <Card className="absolute right-0 mt-2 w-48 z-10 shadow-lg">
                             <CardContent className="p-2">
                               <div className="space-y-1">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="w-full justify-start gap-2"
+                                  className="w-full justify-start gap-2 text-gray-700 hover:text-blue-500"
                                   onClick={() => handleShare("twitter")}
                                 >
                                   <Twitter className="h-4 w-4" />
@@ -474,7 +671,7 @@ const ArticlePage = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="w-full justify-start gap-2"
+                                  className="w-full justify-start gap-2 text-gray-700 hover:text-blue-600"
                                   onClick={() => handleShare("facebook")}
                                 >
                                   <Facebook className="h-4 w-4" />
@@ -483,7 +680,7 @@ const ArticlePage = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="w-full justify-start gap-2"
+                                  className="w-full justify-start gap-2 text-gray-700 hover:text-blue-700"
                                   onClick={() => handleShare("linkedin")}
                                 >
                                   <Linkedin className="h-4 w-4" />
@@ -492,7 +689,17 @@ const ArticlePage = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="w-full justify-start gap-2"
+                                  className="w-full justify-start gap-2 text-gray-700 hover:text-green-500"
+                                  onClick={() => handleShare("whatsapp")}
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                  WhatsApp
+                                </Button>
+                                <Separator />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full justify-start gap-2 text-gray-700"
                                   onClick={() => handleShare("copy")}
                                 >
                                   <Copy className="h-4 w-4" />
@@ -509,70 +716,108 @@ const ArticlePage = () => {
               </header>
 
               {/* Hero Image */}
-              <div className="relative">
-                <Image
-                  width={100}
-                  height={100}
-                  src={
-                    article.featuredImage ||
-                    "https://images.pexels.com/photos/1679618/pexels-photo-1679618.jpeg?auto=compress&cs=tinysrgb&w=600"
-                  }
-                  alt={article.title}
-                  className="w-full h-64 lg:h-96 object-cover rounded-lg"
-                />
-
-                {/* ✅ Ad Space - Top (728x90) */}
-                <div className="mt-6">
-                  <GoogleAdSense
-                    adSlot="728x90_top_article" // अपना actual ad slot ID डालें
-                    adFormat="horizontal"
-                    fullWidthResponsive={true}
-                    className="w-full"
-                  />
+              {article.featuredImage && (
+                <div className="relative">
+                  <div className="w-full overflow-hidden rounded-lg shadow-lg">
+                    <img
+                      src={article.featuredImage}
+                      alt={article.title}
+                      className="w-full h-auto max-h-[500px] object-contain bg-gray-100"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/1679618/pexels-photo-1679618.jpeg?auto=compress&cs=tinysrgb&w=600";
+                      }}
+                    />
+                  </div>
+                  
+                  {article.excerpt && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <p className="text-gray-700 italic">{article.excerpt}</p>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* ✅ Ad Space - Top (728x90) */}
+              <div className="mt-6">
+                <GoogleAdSense
+                  adSlot="728x90_top_article"
+                  adFormat="horizontal"
+                  fullWidthResponsive={true}
+                  className="w-full"
+                />
               </div>
 
               {/* Article Content */}
               <div
-                className="prose prose-lg max-w-none text-foreground"
+                className="prose prose-lg max-w-none text-gray-800"
+                style={{
+                  fontFamily: 'Georgia, "Times New Roman", Times, serif',
+                  fontSize: '1.125rem',
+                  lineHeight: '1.75'
+                }}
                 dangerouslySetInnerHTML={{
                   __html: formatContent(article.content),
                 }}
               />
 
-              {/* ✅ In-Content Ad (300x250) - Content ke बीच में */}
+              {/* ✅ In-Content Ad (300x250) */}
               <div className="my-8 text-center">
                 <GoogleAdSense
-                  adSlot="300x250_incontent" // अपना actual ad slot ID डालें
+                  adSlot="300x250_incontent"
                   adFormat="rectangle"
                   fullWidthResponsive={false}
                   className="mx-auto"
                 />
               </div>
 
+              {/* Tags Section */}
+              {article.tags && article.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {article.tags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="px-3 py-1 text-sm"
+                    >
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               {/* Source Information */}
               {article.sourcePersonName && (
-                <Card>
+                <Card className="mt-6">
                   <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2">Source Information</h3>
-                    <p className="text-muted-foreground">
-                      Information provided by: {article.sourcePersonName}
-                    </p>
-                    {article.sourcePersonSocial?.facebook && (
-                      <p className="text-sm mt-1">
-                        Facebook: {article.sourcePersonSocial.facebook}
-                      </p>
-                    )}
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Source Information</h3>
+                        <p className="text-gray-700">
+                          Information provided by: <span className="font-medium">{article.sourcePersonName}</span>
+                        </p>
+                        {article.sourcePersonSocial && (
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                            {article.sourcePersonSocial.twitter && (
+                              <span>Twitter: {article.sourcePersonSocial.twitter}</span>
+                            )}
+                            {article.sourcePersonSocial.facebook && (
+                              <span>Facebook: {article.sourcePersonSocial.facebook}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
-              <Separator />
+              <Separator className="my-8" />
 
               {/* ✅ Ad Space - Middle (728x90) */}
               <div className="my-6">
                 <GoogleAdSense
-                  adSlot="728x90_middle_article" // अपना actual ad slot ID डालें
+                  adSlot="728x90_middle_article"
                   adFormat="horizontal"
                   fullWidthResponsive={true}
                   className="w-full"
@@ -581,22 +826,49 @@ const ArticlePage = () => {
 
               {/* Author Bio */}
               {article.layoutConfig?.showAuthor && article.author && (
-                <Card>
+                <Card className="mt-6">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16">
-                        <AvatarImage src={article.author.profileImage || ""} />
-                        <AvatarFallback>
+                        <AvatarImage 
+                          src={article.author.profileImage || ""} 
+                          alt={article.author.name}
+                        />
+                        <AvatarFallback className="bg-blue-100 text-blue-600 text-lg">
                           {article.author.name?.charAt(0) || "A"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">
+                        <h3 className="font-semibold text-lg text-gray-900">
                           About {article.author.name}
                         </h3>
-                        <p className="text-muted-foreground mt-1">
-                          Author at News Platform
+                        <p className="text-gray-600 mt-1">
+                          Author at News Platform. Specializing in breaking news and in-depth analysis.
                         </p>
+                        {article.author.socialLinks && (
+                          <div className="flex items-center gap-3 mt-3">
+                            {article.author.socialLinks.twitter && (
+                              <a 
+                                href={article.author.socialLinks.twitter} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-500"
+                              >
+                                <Twitter className="h-4 w-4" />
+                              </a>
+                            )}
+                            {article.author.socialLinks.linkedin && (
+                              <a 
+                                href={article.author.socialLinks.linkedin} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <Linkedin className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -604,71 +876,74 @@ const ArticlePage = () => {
               )}
 
               {/* Comments Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageCircle className="h-5 w-5" />
-                    Comments
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Textarea
-                      placeholder="Share your thoughts on this article..."
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      rows={3}
-                      maxLength={500}
-                    />
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm text-muted-foreground">
-                        {comment.length}/500 characters
-                      </p>
-                      <Button size="sm" className="gap-2">
-                        <Send className="h-4 w-4" />
-                        Post Comment
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Sample Comments */}
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>JD</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">
-                            John Doe
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            2 hours ago
-                          </span>
-                        </div>
-                        <p className="text-sm text-foreground mt-1">
-                          Great article! This really highlights the importance
-                          of staying ahead of technological trends.
+              {article.allowComments && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
+                      <MessageCircle className="h-5 w-5" />
+                      Comments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Share your thoughts on this article..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        rows={3}
+                        maxLength={500}
+                        className="resize-none"
+                      />
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-500">
+                          {comment.length}/500 characters
                         </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs gap-1"
-                          >
-                            <ThumbsUp className="h-3 w-3" />5
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-xs">
-                            Reply
-                          </Button>
+                        <Button size="sm" className="gap-2">
+                          <Send className="h-4 w-4" />
+                          Post Comment
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Sample Comments */}
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-gray-200 text-gray-600">JD</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-gray-900">
+                              John Doe
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              2 hours ago
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mt-1">
+                            Great article! This really highlights the importance
+                            of staying ahead of technological trends.
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs gap-1 text-gray-600"
+                            >
+                              <ThumbsUp className="h-3 w-3" />5
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-xs text-gray-600">
+                              Reply
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </article>
           </div>
 
@@ -677,7 +952,7 @@ const ArticlePage = () => {
             {/* ✅ Ad Space - Sidebar Top (300x250) */}
             <div>
               <GoogleAdSense
-                adSlot="300x250_sidebar_top" // अपना actual ad slot ID डालें
+                adSlot="300x250_sidebar_top"
                 adFormat="rectangle"
                 fullWidthResponsive={false}
                 className="w-full"
@@ -687,7 +962,7 @@ const ArticlePage = () => {
             {/* Related Articles */}
             <Card>
               <CardHeader>
-                <CardTitle>Related Articles</CardTitle>
+                <CardTitle className="text-gray-900">Related Articles</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {relatedLoading ? (
@@ -715,24 +990,27 @@ const ArticlePage = () => {
                         }
                       >
                         <div className="flex gap-3">
-                          <Image
-                            width={80}
-                            height={80}
-                            src={relatedArticle.featuredImage}
-                            alt={relatedArticle.title}
-                            className="w-20 h-20 object-cover rounded flex-shrink-0"
-                          />
+                          <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded">
+                            <img
+                              src={relatedArticle.featuredImage || "https://images.pexels.com/photos/1679618/pexels-photo-1679618.jpeg?auto=compress&cs=tinysrgb&w=600"}
+                              alt={relatedArticle.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/1679618/pexels-photo-1679618.jpeg?auto=compress&cs=tinysrgb&w=600";
+                              }}
+                            />
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-2">
+                            <h4 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                               {relatedArticle.title}
                             </h4>
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                               {relatedArticle.excerpt}
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <Badge
                                 variant="outline"
-                                className="text-xs"
+                                className="text-xs px-2 py-0.5"
                                 style={{
                                   borderColor: "#3b82f6",
                                   color: "#3b82f6",
@@ -740,16 +1018,12 @@ const ArticlePage = () => {
                               >
                                 {relatedCategory.name}
                               </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {
-                                  formatDate(relatedArticle.publishedAt).split(
-                                    ","
-                                  )[0]
-                                }
+                              <span className="text-xs text-gray-500">
+                                {formatDate(relatedArticle.publishedAt).split(",")[0]}
                               </span>
-                              <Eye className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {relatedArticle.meta?.views || 0}
+                              <Eye className="h-3 w-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">
+                                {relatedArticle.meta?.views?.toLocaleString() || 0}
                               </span>
                             </div>
                           </div>
@@ -759,7 +1033,7 @@ const ArticlePage = () => {
                     );
                   })
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                  <p className="text-sm text-gray-500 text-center py-4">
                     No related articles found
                   </p>
                 )}
@@ -769,7 +1043,7 @@ const ArticlePage = () => {
             {/* ✅ Ad Space - Sidebar Middle (300x250) */}
             <div className="mt-6">
               <GoogleAdSense
-                adSlot="300x250_sidebar_middle" // अपना actual ad slot ID डालें
+                adSlot="300x250_sidebar_middle"
                 adFormat="rectangle"
                 fullWidthResponsive={false}
                 className="w-full"
@@ -779,7 +1053,7 @@ const ArticlePage = () => {
             {/* ✅ Ad Space - Sidebar Bottom (300x100 or 300x250) */}
             <div className="mt-6">
               <GoogleAdSense
-                adSlot="300x250_sidebar_bottom" // अपना actual ad slot ID डालें
+                adSlot="300x250_sidebar_bottom"
                 adFormat="rectangle"
                 fullWidthResponsive={false}
                 className="w-full"
