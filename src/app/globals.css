@@ -120,3 +120,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+
+/* In your CSS file */
+.table-cell-truncate {
+  max-width: 200px; /* Adjust based on your table layout */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

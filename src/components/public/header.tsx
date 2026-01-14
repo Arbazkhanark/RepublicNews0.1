@@ -123,6 +123,10 @@ export function PublicHeader() {
       label: language === "hi" ? "जाली खबरें" : "FAKE NEWS",
     },
     {
+      href: "/opinion",
+      label: language === "hi" ? "राय" : "OPINION",
+    },
+    {
       href: "https://www.youtube.com/@therepublicmirror",
       label: language === "hi" ? "वीडियो" : "VIDEOS",
       isExternal: true,

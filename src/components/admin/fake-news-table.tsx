@@ -2283,7 +2283,7 @@ export default function FakeNewsTable({
                                 <div className="font-semibold text-gray-900 line-clamp-1">
                                   {report.title || "Untitled Report"}
                                 </div>
-                                <div className="text-sm text-gray-600 line-clamp-2 mt-1">
+                                <div className="text-sm text-gray-600 line-clamp-2 mt-1 table-cell-truncate">
                                   {report.fakeClaim || "No claim provided"}
                                 </div>
                               </div>

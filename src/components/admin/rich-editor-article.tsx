@@ -71,38 +71,24 @@ export function RichTextEditor({ content, onChange, placeholder = "Write your co
     if (imagePosition === "center") {
       imageHtml = `
 <div class="image-container my-6 text-center">
-  <img 
-    src="${imageUrl}" 
-    alt="${imageAlt || 'Image'}" 
-    class="mx-auto max-w-full h-auto rounded-lg shadow-md"
-    style="max-height: 500px; object-fit: contain;"
-  >
+  <img src="${imageUrl}" alt="${imageAlt || 'Image'}" class="mx-auto max-w-full h-auto rounded-lg shadow-md" style="max-height: 500px; object-fit: contain;">
   ${imageCaption ? `<p class="text-sm text-gray-500 italic mt-2">${imageCaption}</p>` : ''}
 </div>
 `
     } else if (imagePosition === "left") {
       imageHtml = `
 <div class="image-container my-6 float-left mr-4 mb-4" style="max-width: 300px;">
-  <img 
-    src="${imageUrl}" 
-    alt="${imageAlt || 'Image'}" 
-    class="w-full h-auto rounded-lg shadow-md"
-  >
+  <img src="${imageUrl}" alt="${imageAlt || 'Image'}" class="w-full h-auto rounded-lg shadow-md">
   ${imageCaption ? `<p class="text-sm text-gray-500 italic mt-2">${imageCaption}</p>` : ''}
 </div>
 `
     } else if (imagePosition === "right") {
       imageHtml = `
 <div class="image-container my-6 float-right ml-4 mb-4" style="max-width: 300px;">
-  <img 
-    src="${imageUrl}" 
-    alt="${imageAlt || 'Image'}" 
-    class="w-full h-auto rounded-lg shadow-md"
-  >
+  <img src="${imageUrl}" alt="${imageAlt || 'Image'}" class="w-full h-auto rounded-lg shadow-md">
   ${imageCaption ? `<p class="text-sm text-gray-500 italic mt-2">${imageCaption}</p>` : ''}
 </div>
-`
-    }
+`}
 
     insertTextAtCursor(imageHtml + '\n\n')
     setIsImageDialogOpen(false)
