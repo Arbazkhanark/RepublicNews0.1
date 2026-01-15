@@ -66,14 +66,11 @@ export const POST = withAdminAuth(async (req: NextRequest, user: User) => {
     }
 
     const body = await req.json();
-    console.log("Request body:", JSON.stringify(body, null, 2));
 
     // Parse and validate input
     const parsed = CampaignSchema.safeParse(body);
     
     if (!parsed.success) {
-      console.error("Validation errors:", parsed.error);
-      
       // Type-safe error mapping using ZodError.flatten()
       const flatErrors = parsed.error.flatten();
       const errorDetails = Object.entries(flatErrors.fieldErrors).map(([field, messages]) => ({
@@ -92,8 +89,6 @@ export const POST = withAdminAuth(async (req: NextRequest, user: User) => {
     }
 
     const data = parsed.data;
-    console.log("Validated data:", JSON.stringify(data, null, 2));
-
     const NewsletterCampaign = getNewsletterCampaignModel();
 
     // Generate title if not provided
@@ -149,10 +144,7 @@ export const POST = withAdminAuth(async (req: NextRequest, user: User) => {
       createdBy: new mongoose.Types.ObjectId(user.userId),
     };
 
-    console.log("Creating campaign with data:", JSON.stringify(campaignData, null, 2));
-
     const campaign = await NewsletterCampaign.create(campaignData);
-    console.log("Created campaign:", campaign._id);
 
     return NextResponse.json({ 
       success: true, 

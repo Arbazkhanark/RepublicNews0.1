@@ -88,7 +88,6 @@ export async function POST(
 
     // Get existing viewers from report
     const existingViewers = report.viewers || [];
-    console.log('Existing viewers:', existingViewers);
     
     // Check if user has viewed this report in the last 24 hours
     let hasViewedInLast24Hours = false;

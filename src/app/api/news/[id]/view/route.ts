@@ -9,7 +9,6 @@ import { UserFromToken, withAuth } from '@/lib/auth/middleware';
 export const POST = (async (req: NextRequest, user: UserFromToken) => {
   try {
     const url = new URL(req.url);
-    console.log("URL:", url);
     const articleId = url.pathname.split('/')[3];
     const userId = user.userId;
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 

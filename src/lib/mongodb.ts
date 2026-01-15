@@ -1,9 +1,12 @@
 // src/lib/mongodb.ts
 import mongoose from 'mongoose';
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb+srv://arbaazkhanark23_db_user:6APCjmKsqQ5YeU3X@cluster0.uqvoox7.mongodb.net/republicmirror';
+// const MONGODB_URI =
+  // process.env.MONGODB_URI || 'mongodb+srv://wasimahmedcom_db_user:6FTpgCaNaNKp5sHD@cluster0.iu5ulnr.mongodb.net/republicmirror';
+
+
+const MONGODB_URI = 'mongodb+srv://arbaazkhanark23_db_user:6APCjmKsqQ5YeU3X@cluster0.uqvoox7.mongodb.net/republicmirror';
+// const MONGODB_URI ='mongodb+srv://wasimahmedcom_db_user:6FTpgCaNaNKp5sHD@cluster0.iu5ulnr.mongodb.net/republicmirror';
 
 if (!MONGODB_URI) {
   throw new Error(
@@ -54,10 +57,10 @@ async function connectToDatabase(): Promise<typeof mongoose> {
     console.log('🔗 Connecting to MongoDB...');
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      console.log('✅ MongoDB connected successfully');
+      console.log('✅ MongoDB connected successfully',MONGODB_URI);
 
       mongooseInstance.connection.on('connected', () => {
-        console.log('✅ Mongoose connected to MongoDB');
+        console.log('✅ Mongoose connected to MongoDB',MONGODB_URI);
       });
 
       mongooseInstance.connection.on('error', (err) => {

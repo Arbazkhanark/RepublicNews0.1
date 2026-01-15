@@ -13,8 +13,6 @@ export async function POST(
     // Await the params to get the id
     const { id } = await params;
 
-    console.log(`[v0] View count incremented for article ${id}`)
-
     return NextResponse.json({ message: "View count updated" })
   } catch (error) {
     console.error("Update view count error:", error)

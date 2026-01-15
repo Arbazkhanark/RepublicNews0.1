@@ -19,11 +19,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    console.log(email, "Registering User...")
-    console.log(role, "Role...")
     const User = getUserModel();
     const existingUser = await User.findOne({ email })
-    console.log(existingUser, "Existing User...")
     if (existingUser) {
       return NextResponse.json({ error: "User already exists" }, { status: 409 })
     }
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
 
     // const result = await usersCollection.insertOne(newUser)
     const result = await User.create(newUser)
-    console.log("New user created with ID:", result)
 
     const token = signToken({
       userId: result._id!.toString(),

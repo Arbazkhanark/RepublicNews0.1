@@ -2332,25 +2332,19 @@ export default function SingleOpinionPage() {
     try {
       setLoading(true);
       
-      console.log('Fetching opinion with ID:', opinionId);
-      
       // First try to get the full opinion data
       const response = await fetch(`/api/admin/opinions/${opinionId}`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('API Response:', data.opinion);
         setOpinion(data.opinion);
         
         // Parse both English and Hindi content
         if (data.opinion?.content) {
-          console.log('English content length:', data.opinion.content.length);
           const parsed = parseContent(data.opinion.content);
-          console.log('Number of English blocks:', parsed.length);
           
           // Log image blocks
           const imageBlocks = parsed.filter(block => block.type === 'image');
-          console.log('Number of image blocks in English:', imageBlocks.length);
           imageBlocks.forEach((block, index) => {
             console.log(`Image ${index + 1} URL:`, block.meta?.imageUrl);
             console.log(`Image ${index + 1} caption:`, block.meta?.caption);
@@ -2360,14 +2354,9 @@ export default function SingleOpinionPage() {
         }
         
         if (data.opinion?.contentHi) {
-          console.log('Hindi content length:', data.opinion.contentHi.length);
           const parsedHi = parseContent(data.opinion.contentHi);
-          console.log('Number of Hindi blocks:', parsedHi.length);
-          
           // Log image blocks
           const imageBlocksHi = parsedHi.filter(block => block.type === 'image');
-          console.log('Number of image blocks in Hindi:', imageBlocksHi.length);
-          
           setParsedContentHi(parsedHi);
         }
         
@@ -2384,7 +2373,6 @@ export default function SingleOpinionPage() {
       if (publicResponse.ok) {
         const publicData = await publicResponse.json();
         const opinionData = publicData.opinion || publicData;
-        console.log('Public API Response:', opinionData);
         setOpinion(opinionData);
         
         // Parse both English and Hindi content
@@ -2751,17 +2739,10 @@ export default function SingleOpinionPage() {
   }, [checkUserInteraction]);
 
   // Add debug effect for parsed content
-  useEffect(() => {
-    console.log('Current language:', language);
-    console.log('Parsed content blocks:', parsedContent);
-    console.log('Parsed Hindi content blocks:', parsedContentHi);
-    
+  useEffect(() => {    
     // Log all image blocks
     const englishImages = parsedContent.filter(block => block.type === 'image');
     const hindiImages = parsedContentHi.filter(block => block.type === 'image');
-    
-    console.log('English image blocks:', englishImages.length);
-    console.log('Hindi image blocks:', hindiImages.length);
   }, [parsedContent, parsedContentHi, language]);
 
   const hasHindiTranslation = opinion?.contentHi && opinion.contentHi.trim().length > 0;

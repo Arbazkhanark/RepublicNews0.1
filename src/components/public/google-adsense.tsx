@@ -60,33 +60,21 @@
 //   )
 // }
 
+"use client";
 
-
-
-
-
-
-
-
-
-
-
-
-"use client"
-
-import { useEffect } from "react"
+import { useEffect } from "react";
 
 declare global {
   interface Window {
-    adsbygoogle?: { push: (params: object) => void }[]
+    adsbygoogle?: { push: (params: object) => void }[];
   }
 }
 
 interface GoogleAdSenseProps {
-  adSlot: string
-  adFormat?: "auto" | "rectangle" | "vertical" | "horizontal"
-  fullWidthResponsive?: boolean
-  className?: string
+  adSlot: string;
+  adFormat?: "auto" | "rectangle" | "vertical" | "horizontal";
+  fullWidthResponsive?: boolean;
+  className?: string;
 }
 
 /**
@@ -99,19 +87,19 @@ export function GoogleAdSense({
   fullWidthResponsive = true,
   className = "",
 }: GoogleAdSenseProps) {
-  const isDev = process.env.NODE_ENV !== "production"
+  const isDev = process.env.NODE_ENV !== "production";
 
   useEffect(() => {
     if (!isDev) {
       try {
         if (typeof window !== "undefined" && window.adsbygoogle) {
-          (window.adsbygoogle as any).push({})
+          (window.adsbygoogle as any).push({});
         }
       } catch (error) {
-        console.error("AdSense error:", error)
+        console.error("AdSense error:", error);
       }
     }
-  }, [isDev])
+  }, [isDev]);
 
   // ===============================
   // ✅ DEVELOPMENT PLACEHOLDER UI
@@ -133,15 +121,13 @@ export function GoogleAdSense({
       >
         <div className="text-center space-y-1">
           <div className="font-semibold">Ad Placeholder</div>
-          <div className="text-xs opacity-70">
-            Slot: {adSlot}
-          </div>
+          <div className="text-xs opacity-70">Slot: {adSlot}</div>
           <div className="text-xs capitalize opacity-70">
             Format: {adFormat}
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // ===============================
@@ -158,14 +144,14 @@ export function GoogleAdSense({
         data-full-width-responsive={fullWidthResponsive.toString()}
       />
     </div>
-  )
+  );
 }
 
 // ===============================
 // AdSense Script Loader
 // ===============================
 export function GoogleAdSenseScript() {
-  if (!process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return null
+  if (!process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return null;
 
   return (
     <script
@@ -173,5 +159,5 @@ export function GoogleAdSenseScript() {
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`}
       crossOrigin="anonymous"
     />
-  )
+  );
 }

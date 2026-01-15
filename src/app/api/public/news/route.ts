@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
     const { searchParams } = new URL(request.url)
-    console.log(request.url, "REQUESTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "10")
     const category = searchParams.get("category")
@@ -16,11 +15,9 @@ export async function GET(request: NextRequest) {
     const trending = searchParams.get("trending") === "true"
     const language = searchParams.get("language")
 
-    console.log(searchParams, "SEARCHPARAMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
     // let news = findNews({ status: "published" })
     const Article = getArticleModel();
     let news = await Article.find({ status: "published" }).lean()
-    console.log(news, "NEWSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
 
     // Apply filters
     if (category) {

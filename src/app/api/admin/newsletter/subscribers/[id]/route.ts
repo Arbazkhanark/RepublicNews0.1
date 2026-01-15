@@ -33,7 +33,6 @@ export const PATCH = withAdminAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     const url = request.nextUrl || new URL(request.url)
     const id = url.pathname.split("/").pop() || ""
-    console.log(id, "IDDDDDDDDDDDDDDDDDDDDDDD")
     if (!isValidObjectId(id)) {
       return NextResponse.json({ error: "Invalid subscriber ID" }, { status: 400 });
     }
@@ -90,7 +89,6 @@ export const DELETE = withAdminAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     const url = request.nextUrl || new URL(request.url)
     const id = url.pathname.split("/").pop() || ""
-    console.log(id, "IDDDDDDDDDDDDDDDDDDDDDDD")
     if (!isValidObjectId(id)) {
       return NextResponse.json({ error: "Invalid subscriber ID" }, { status: 400 });
     }

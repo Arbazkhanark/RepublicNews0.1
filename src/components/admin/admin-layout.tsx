@@ -49,7 +49,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  console.log(user, "User in AdminLayout...");
 
   //   useEffect(() => {
   //   // agar tum admin area me ho toh admin check chalayenge

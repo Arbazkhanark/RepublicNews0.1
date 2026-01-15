@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,17 +34,18 @@ import {
   Search,
   Menu,
   Bell,
-  User
+  User,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 import { PublicHeader } from "@/components/public/header";
 import { PublicFooter } from "@/components/public/footer";
-import { HeroNewsCarousel } from "@/components/public/HeroNewsCaousel";
 import { GoogleAdSense } from "@/components/public/google-adsense";
-import { YouTubeVideosSection } from "@/components/public/youtube-videos-section";
-import { YouTubeSidebar } from "@/components/public/youtube-sidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { HeroNewsCarousel } from "@/components/public/HeroNewsCaousel";
+import { YouTubeCache, YouTubeVideo } from "@/lib/utils/youtube-cache";
 
 interface NewsArticle {
   _id: string;
@@ -104,19 +105,34 @@ export default function HomePage() {
   const [latestNews, setLatestNews] = useState<NewsArticle[]>([]);
   const [trendingNews, setTrendingNews] = useState<NewsArticle[]>([]);
   const [topOpinions, setTopOpinions] = useState<Opinion[]>([]);
+  const [latestVideos, setLatestVideos] = useState<YouTubeVideo[]>([]);
+  const [popularVideos, setPopularVideos] = useState<YouTubeVideo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [videoLoading, setVideoLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchNews();
     fetchOpinions();
+    fetchYouTubeVideos();
+    
+    // Set up periodic refresh (every 30 minutes)
+    const refreshInterval = setInterval(() => {
+      if (!videoLoading) {
+        refreshVideos();
+      }
+    }, 30 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
   }, [language]);
 
   const fetchNews = async () => {
     try {
       setLoading(true);
 
-      // HERO ARTICLES - Updated to include Hindi support
+      // HERO ARTICLES
       const featuredResponse = await fetch(
         `/api/news?page=1&limit=10&language=${language}`
       );
@@ -145,7 +161,7 @@ export default function HomePage() {
         setFeaturedNews(articlesToUse.slice(0, 3));
       }
 
-      // LATEST NEWS - Updated to include Hindi support
+      // LATEST NEWS
       const latestResponse = await fetch(
         `/api/news?page=1&limit=25&language=${language}&status=published`
       );
@@ -159,7 +175,7 @@ export default function HomePage() {
         setLatestNews(sortedNews);
       }
 
-      // TRENDING NEWS - Updated to include Hindi support
+      // TRENDING NEWS
       const trendingResponse = await fetch(
         `/api/news?page=1&limit=10&language=${language}&status=published&sortBy=views&sortOrder=desc`
       );
@@ -187,7 +203,77 @@ export default function HomePage() {
     }
   };
 
-  // Helper functions to get localized content for news
+  const fetchYouTubeVideos = async () => {
+    try {
+      setVideoLoading(true);
+      setVideoError(null);
+      
+      // Use cache system instead of direct API calls
+      const [latest, popular] = await Promise.all([
+        YouTubeCache.getVideos('latest', 8),
+        YouTubeCache.getVideos('popular', 8)
+      ]);
+      
+      setLatestVideos(latest);
+      setPopularVideos(popular);
+      setLastRefreshTime(new Date());
+      
+      if (latest.length === 0 && popular.length === 0) {
+        setVideoError(language === 'hi' 
+          ? 'वीडियो लोड नहीं हो पाए। कृपया बाद में पुनः प्रयास करें।'
+          : 'Failed to load videos. Please try again later.'
+        );
+      }
+    } catch (error) {
+      console.error("Failed to fetch YouTube videos:", error);
+      setVideoError(language === 'hi' 
+        ? 'वीडियो लोड करने में त्रुटि। कैश डेटा प्रदर्शित किया जा रहा है।'
+        : 'Error loading videos. Displaying cached data.'
+      );
+    } finally {
+      setVideoLoading(false);
+    }
+  };
+
+  const refreshVideos = async () => {
+    try {
+      setVideoLoading(true);
+      setVideoError(null);
+      
+      const [latest, popular] = await Promise.all([
+        YouTubeCache.refreshVideos('latest', 8),
+        YouTubeCache.refreshVideos('popular', 8)
+      ]);
+      
+      setLatestVideos(latest);
+      setPopularVideos(popular);
+      setLastRefreshTime(new Date());
+      
+      if (latest.length === 0 && popular.length === 0) {
+        setVideoError(language === 'hi' 
+          ? 'वीडियो ताज़ा नहीं किए जा सके।'
+          : 'Could not refresh videos.'
+        );
+      }
+    } catch (error) {
+      console.error("Failed to refresh YouTube videos:", error);
+      setVideoError(language === 'hi' 
+        ? 'ताज़ा करने में त्रुटि।'
+        : 'Error refreshing videos.'
+      );
+    } finally {
+      setVideoLoading(false);
+    }
+  };
+
+  const clearVideoCache = () => {
+    YouTubeCache.clearCache();
+    setLatestVideos([]);
+    setPopularVideos([]);
+    fetchYouTubeVideos();
+  };
+
+  // Helper functions
   const getNewsTitle = (article: NewsArticle) => {
     return language === 'hi' && article.titleHi ? article.titleHi : article.title;
   };
@@ -196,7 +282,6 @@ export default function HomePage() {
     return language === 'hi' && article.excerptHi ? article.excerptHi : article.excerpt;
   };
 
-  // Helper functions to get localized content for opinions
   const getOpinionTitle = (opinion: Opinion) => {
     return language === 'hi' && opinion.titleHi ? opinion.titleHi : opinion.title;
   };
@@ -243,27 +328,6 @@ export default function HomePage() {
     }
   };
 
-  const getRelativeTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      
-      if (diffHours < 1) {
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        return language === 'hi' ? `${diffMins} मिनट पहले` : `${diffMins} minutes ago`;
-      } else if (diffHours < 24) {
-        return language === 'hi' ? `${diffHours} घंटे पहले` : `${diffHours} hours ago`;
-      } else {
-        const diffDays = Math.floor(diffHours / 24);
-        return language === 'hi' ? `${diffDays} दिन पहले` : `${diffDays} days ago`;
-      }
-    } catch (error) {
-      return language === 'hi' ? "हाल ही में" : "Recently";
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', { 
       day: 'numeric', 
@@ -271,6 +335,67 @@ export default function HomePage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatVideoDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        return language === 'hi' ? 'आज' : 'Today';
+      } else if (diffDays === 1) {
+        return language === 'hi' ? 'कल' : 'Yesterday';
+      } else if (diffDays < 7) {
+        return language === 'hi' ? `${diffDays} दिन पहले` : `${diffDays} days ago`;
+      } else if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return language === 'hi' ? `${weeks} सप्ताह पहले` : `${weeks} weeks ago`;
+      } else if (diffDays < 365) {
+        const months = Math.floor(diffDays / 30);
+        return language === 'hi' ? `${months} महीने पहले` : `${months} months ago`;
+      } else {
+        const years = Math.floor(diffDays / 365);
+        return language === 'hi' ? `${years} साल पहले` : `${years} years ago`;
+      }
+    } catch (error) {
+      return language === 'hi' ? "हाल ही में" : "Recently";
+    }
+  };
+
+  const formatViewCount = (count: string) => {
+    const num = parseInt(count);
+    if (isNaN(num)) return count;
+    
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
+  const formatDuration = (duration: string) => {
+    try {
+      const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+      if (!match) return duration;
+      
+      const hours = (match[1] || '').replace('H', '');
+      const minutes = (match[2] || '').replace('M', '');
+      const seconds = (match[3] || '').replace('S', '');
+      
+      if (hours) {
+        return `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+      } else if (minutes) {
+        return `${minutes}:${seconds.padStart(2, '0')}`;
+      } else {
+        return `0:${seconds.padStart(2, '0')}`;
+      }
+    } catch (error) {
+      return duration;
+    }
   };
 
   if (loading) {
@@ -417,7 +542,7 @@ export default function HomePage() {
 
             {/* ================= MAIN CONTENT AREA ================= */}
             <div className="lg:col-span-6">
-              {/* TODAY'S TOP STORIES - PRIMARY FOCUS */}
+              {/* ================= TODAY'S TOP STORIES ================= */}
               <div className="bg-white p-6 mb-8">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b">
                   <div>
@@ -587,12 +712,224 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* YouTube Videos Section */}
-              <div className="mb-8">
-                <YouTubeVideosSection />
+              {/* ================= YouTube Videos Section with Caching ================= */}
+              <div className="mb-8 bg-white p-6 rounded-lg border">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-600 p-2 rounded">
+                      <Youtube className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {language === 'hi' ? 'YouTube वीडियो' : 'YouTube Videos'}
+                      </h2>
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
+                        <p>
+                          {language === 'hi' 
+                            ? 'हमारे YouTube चैनल से नवीनतम वीडियो'
+                            : 'Latest videos from our YouTube channel'
+                          }
+                        </p>
+                        {lastRefreshTime && (
+                          <span className="text-xs text-gray-500">
+                            ({language === 'hi' ? 'अपडेट' : 'Updated'} {formatVideoDate(lastRefreshTime.toISOString())})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refreshVideos}
+                      disabled={videoLoading}
+                      className="flex items-center gap-1"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${videoLoading ? 'animate-spin' : ''}`} />
+                      {language === 'hi' ? 'ताज़ा करें' : 'Refresh'}
+                    </Button>
+                    <a 
+                      href="https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1 text-sm"
+                    >
+                      {language === 'hi' ? 'चैनल देखें' : 'View Channel'}
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Error Message */}
+                {videoError && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-yellow-800">{videoError}</p>
+                  </div>
+                )}
+
+                {/* Cached Data Info */}
+                {lastRefreshTime && (
+                  <div className="mb-4 p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {language === 'hi' 
+                          ? 'कैश डेटा प्रदर्शित किया जा रहा है। ताज़ा करने पर API कॉल होगी।'
+                          : 'Displaying cached data. Refresh will make API calls.'
+                        }
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearVideoCache}
+                        className="h-6 text-xs"
+                      >
+                        {language === 'hi' ? 'कैश साफ़ करें' : 'Clear Cache'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading State */}
+                {videoLoading ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Latest Videos */}
+                    {latestVideos.length > 0 && (
+                      <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {language === 'hi' ? 'नवीनतम वीडियो' : 'Latest Videos'}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {latestVideos.length} {language === 'hi' ? 'वीडियो' : 'videos'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {latestVideos.slice(0, 4).map((video) => (
+                            <a
+                              key={video.id}
+                              href={video.videoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group block border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                            >
+                              <div className="relative">
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-full h-48 object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/placeholder-video.jpg';
+                                  }}
+                                />
+                                <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                                  {formatDuration(video.duration)}
+                                </div>
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
+                              </div>
+                              <div className="p-4">
+                                <h4 className="font-semibold line-clamp-2 group-hover:text-red-600 mb-2">
+                                  {video.title}
+                                </h4>
+                                <div className="flex items-center justify-between text-sm text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="w-4 h-4" />
+                                    {formatViewCount(video.viewCount)} {language === 'hi' ? 'दृश्य' : 'views'}
+                                  </span>
+                                  <span>{formatVideoDate(video.publishedAt)}</span>
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Popular Videos */}
+                    {popularVideos.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {language === 'hi' ? 'लोकप्रिय वीडियो' : 'Popular Videos'}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {popularVideos.length} {language === 'hi' ? 'वीडियो' : 'videos'}
+                          </span>
+                        </div>
+                        <div className="space-y-4">
+                          {popularVideos.slice(0, 3).map((video) => (
+                            <a
+                              key={video.id}
+                              href={video.videoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex gap-4 items-start border-b pb-4 last:border-0"
+                            >
+                              <div className="relative w-40 h-24 flex-shrink-0">
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-full h-full object-cover rounded"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/placeholder-video.jpg';
+                                  }}
+                                />
+                                <div className="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-xs px-1 py-0.5 rounded">
+                                  {formatDuration(video.duration)}
+                                </div>
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-semibold line-clamp-2 group-hover:text-red-600 mb-2">
+                                  {video.title}
+                                </h4>
+                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="w-4 h-4" />
+                                    {formatViewCount(video.viewCount)}
+                                  </span>
+                                  <span>•</span>
+                                  <span>{formatVideoDate(video.publishedAt)}</span>
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No Videos State */}
+                    {latestVideos.length === 0 && popularVideos.length === 0 && !videoLoading && (
+                      <div className="text-center py-12">
+                        <Youtube className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                        <h4 className="text-lg font-medium text-gray-700 mb-2">
+                          {language === 'hi' ? 'कोई वीडियो उपलब्ध नहीं' : 'No videos available'}
+                        </h4>
+                        <p className="text-gray-500 mb-4">
+                          {language === 'hi' 
+                            ? 'वीडियो लोड नहीं हो पाए। कृपया बाद में पुनः प्रयास करें।'
+                            : 'Could not load videos. Please try again later.'
+                          }
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={refreshVideos}
+                          className="border-red-200 text-red-600 hover:bg-red-50"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          {language === 'hi' ? 'पुनः प्रयास करें' : 'Try Again'}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
-              {/* LATEST NEWS SECTION */}
+              {/* ================= LATEST NEWS SECTION ================= */}
               <div className="bg-white p-6 mb-8">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b">
                   <div>
@@ -665,7 +1002,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* INLINE AD */}
+              {/* ================= INLINE AD ================= */}
               <div className="mb-8">
                 <GoogleAdSense
                   adSlot="0987654321"
@@ -674,7 +1011,7 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* TOP OPINIONS SECTION - Updated with Hindi support */}
+              {/* ================= TOP OPINIONS SECTION ================= */}
               {topOpinions.length > 0 && (
                 <div className="bg-white p-6 mb-8 border-t-4 border-red-600">
                   <div className="flex items-center justify-between mb-6">
@@ -792,10 +1129,107 @@ export default function HomePage() {
 
             {/* ================= RIGHT SIDEBAR ================= */}
             <aside className="lg:col-span-3 space-y-6">
-              {/* YouTube Sidebar */}
-              <YouTubeSidebar />
+              {/* YouTube Sidebar with Caching */}
+              <div className="bg-white border p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Youtube className="w-5 h-5 text-red-600" />
+                    {language === 'hi' ? 'YouTube वीडियो' : 'YouTube Videos'}
+                  </h3>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refreshVideos}
+                      disabled={videoLoading}
+                      className="h-6 w-6 p-0"
+                      title={language === 'hi' ? 'ताज़ा करें' : 'Refresh'}
+                    >
+                      <RefreshCw className={`h-3 w-3 ${videoLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <a 
+                      href="https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-red-600 hover:text-red-700"
+                    >
+                      {language === 'hi' ? 'सब्सक्राइब' : 'Subscribe'}
+                    </a>
+                  </div>
+                </div>
+                
+                {!videoLoading && latestVideos.length > 0 ? (
+                  <div className="space-y-4">
+                    {latestVideos.slice(0, 3).map((video) => (
+                      <a
+                        key={video.id}
+                        href={video.videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group block"
+                      >
+                        <div className="relative mb-2">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-full h-40 object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder-video.jpg';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
+                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                            {formatDuration(video.duration)}
+                          </div>
+                          <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                            {language === 'hi' ? 'नया' : 'NEW'}
+                          </div>
+                        </div>
+                        <h4 className="text-sm font-medium line-clamp-2 group-hover:text-red-600 mb-1">
+                          {video.title}
+                        </h4>
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {formatViewCount(video.viewCount)}
+                          </span>
+                          <span>{formatVideoDate(video.publishedAt)}</span>
+                        </div>
+                      </a>
+                    ))}
+                    
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => window.open('https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw', '_blank')}
+                    >
+                      <Youtube className="w-4 h-4 mr-2" />
+                      {language === 'hi' ? 'YouTube चैनल देखें' : 'View YouTube Channel'}
+                    </Button>
+                  </div>
+                ) : videoLoading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Youtube className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">
+                      {language === 'hi' ? 'वीडियो उपलब्ध नहीं हैं' : 'No videos available'}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={refreshVideos}
+                      className="mt-2 text-xs"
+                    >
+                      {language === 'hi' ? 'पुनः प्रयास करें' : 'Try Again'}
+                    </Button>
+                  </div>
+                )}
+              </div>
 
-              {/* Most Popular */}
+              {/* ================= Most Popular ================= */}
               <div className="bg-white border p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
@@ -831,7 +1265,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Categories */}
+              {/* ================= Categories ================= */}
               <div className="bg-white border p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b">
                   {language === 'hi' ? 'श्रेणियाँ' : 'Categories'}
@@ -864,7 +1298,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Fact Check */}
+              {/* ================= Fact Check ================= */}
               <div className="bg-white border p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b flex items-center gap-2">
                   <Target className="w-4 h-4" />
@@ -914,7 +1348,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Language Information Card */}
+              {/* ================= Language Information Card ================= */}
               <div className="bg-white border p-4 border-blue-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <Globe className="w-4 h-4" />
@@ -944,7 +1378,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Sticky Ad */}
+              {/* ================= Sticky Ad ================= */}
               <div className="sticky top-24">
                 <GoogleAdSense
                   adSlot="1122334455"

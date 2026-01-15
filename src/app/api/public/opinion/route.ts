@@ -21,12 +21,8 @@ export const POST = withAuth(async (req: NextRequest, user: UserFromToken) => {
   try {
     await connectToDatabase();
 
-    console.log(user, "User in opinion article post");
-
     const body = await req.json();
     const parsed = OpinionArticleSchema.safeParse(body);
-
-    console.log(parsed, "Parsed opinion article data");
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -51,11 +47,7 @@ export const POST = withAuth(async (req: NextRequest, user: UserFromToken) => {
       status: "pending", // New articles are pending review
     };
 
-    console.log(savedData, "Saved data for opinion article");
     const newOpinionArticle = await OpinionArticle.create(savedData);
-
-
-    console.log(newOpinionArticle, "Newly created opinion article");
 
     return NextResponse.json(
       { 

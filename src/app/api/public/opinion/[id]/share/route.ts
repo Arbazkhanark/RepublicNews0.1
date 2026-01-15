@@ -33,7 +33,6 @@ const createShareRecord = async (
     timestamp: new Date(),
     completed: false
   };
-  console.log("Creating share record:", shareRecord);
 
   opinion.shareRecords.push(shareRecord);
   await opinion.save();

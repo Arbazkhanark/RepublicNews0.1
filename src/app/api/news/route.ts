@@ -74,7 +74,6 @@ export const GET = async (request: NextRequest) => {
       .skip(skip)
       .limit(limit);
 
-    console.log(articles, "Articles fetched in GET /articles");
 
     const total = await Article.countDocuments(query);
 
@@ -181,7 +180,6 @@ export const POST = withAdminAuth(async (req: NextRequest, user: User) => {
     const words = `${content || ""} ${contentHi || ""}`.trim().split(/\s+/);
     const readingTime = words.length > 1 ? Math.ceil(words.length / 200) : 1;
 
-    console.log("Creating article with data:", { category, mediaUrls })
     // Create new article
     const article = new Article({
       title,

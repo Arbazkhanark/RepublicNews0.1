@@ -26,15 +26,12 @@ const handleEdit = async (
     await connectToDatabase();
 
     const { id } = await context.params; // Await the params
-    console.log("Editing opinion with ID:", id);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid opinion ID" }, { status: 400 });
     }
 
     const Opinion = getOpinionModel();
     const opinion = await Opinion.findById(id);
-
-    console.log("Fetched opinion:", opinion);
 
     if (!opinion) {
       return NextResponse.json({ error: "Opinion not found" }, { status: 404 });
@@ -47,7 +44,6 @@ const handleEdit = async (
     const body = await req.json();
     const parsed = EditOpinionSchema.safeParse(body);
 
-    console.log("Parsed update data:", parsed);
 
     if (!parsed.success) {
       return NextResponse.json(
