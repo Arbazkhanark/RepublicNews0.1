@@ -129,7 +129,7 @@ export function PublicFooter() {
               </li>
               <li>
                 <Link
-                  href="/privacy"
+                  href="/privacy-policy"
                   className="text-gray-300 hover:text-white transition-colors duration-200"
                 >
                   {language === "hi" ? "गोपनीयता नीति" : "Privacy Policy"}
@@ -137,7 +137,7 @@ export function PublicFooter() {
               </li>
               <li>
                 <Link 
-                  href="/terms" 
+                  href="/terms-and-services" 
                   className="text-gray-300 hover:text-white transition-colors duration-200"
                 >
                   {language === "hi" ? "सेवा की शर्तें" : "Terms of Service"}
