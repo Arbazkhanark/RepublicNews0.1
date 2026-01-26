@@ -90,9 +90,9 @@ const TeamPage = () => {
       bio: "A multimedia journalist specializing in connecting stories from the ground. Graduate in Political Science from Mumbai University, followed by journalism from Jamia Millia Islamia. Passionate about social and political journalism.",
       bioHi:
         "एक मल्टीमीडिया पत्रकार हैं, जो कहानियों को ज़मीन से जोड़कर पेश करने में माहिर हैं. मुंबई विश्वविद्यालय से राजनीति विज्ञान में स्नातक करने के बाद जामिया मिलिया इस्लामिया विश्वविद्यालय, दिल्ली से पत्रकारिता की पढ़ाई की. सामाजिक और राजनीतिक मुद्दों पर पत्रकारिता करना, ग्राउंड रिपोर्टिंग में विशेष रुचि रखते हैं।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Owais",
+      avatar: "/owais.jpeg",
       email: "owais@republicmirror.com",
-      phone: "+91 98765 43218",
+      // phone: "+91 98765 43218",
       social: {
         twitter: "@owaisjournalist",
         linkedin: "owais-siddiqui",
@@ -124,12 +124,12 @@ const TeamPage = () => {
       bio: "Graduated in Political Science from Delhi University, followed by journalism from Jamia Millia Islamia. Experienced in ground reporting. Avid reader and writer with deep interest in social and political issues.",
       bioHi:
         "दिल्ली विश्वविद्यालय से पॉलिटिकल साइंस में ग्रेजुएशन के बाद जामिया मिलिया इस्लामिया से पत्रकारिता की पढ़ाई। ज़मीन पर रिपोर्टिंग का अनुभव। पढ़ने-लिखने का शौक, सामाजिक और राजनीति मुद्दों में गहरी रुचि।",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Waseem",
-      email: "waseem@republicmirror.com",
-      phone: "+91 98765 43219",
+      avatar: "/waseem.jpeg",
+      email: "wasimahmed.com@gmail.com",
+      // phone: "+91 98765 43219",
       social: {
-        twitter: "@waseemeditor",
-        linkedin: "waseem-ahmed",
+        twitter: "https://x.com/Wasim_Words",
+        linkedin: "https://www.linkedin.com/in/mohd-waseem-21a359241?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
         instagram: "waseem_ahmed",
       },
       achievements: [
@@ -435,37 +435,71 @@ const TeamPage = () => {
                   <div className="flex flex-col lg:flex-row gap-8">
                     <div className="flex flex-col items-center lg:items-start">
                       <div className="relative">
-                        <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
-                          <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-3xl">
-                            {member.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
+                        {/* Fixed Image Display */}
+                        <div className="h-32 w-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                          <Image
+                            src={member.avatar}
+                            alt={member.name}
+                            width={128}
+                            height={128}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                         <div className="absolute -bottom-2 -right-2 bg-red-600 text-white p-2 rounded-full">
                           <Star className="h-5 w-5" />
                         </div>
                       </div>
 
                       <div className="mt-6 flex gap-3">
+                        {member.social.linkedin && (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-full"
+                            asChild
+                          >
+                            <Link
+                              href={
+                                member.social.linkedin.startsWith("http")
+                                  ? member.social.linkedin
+                                  : `https://linkedin.com/in/${member.social.linkedin}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Linkedin className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
+                        {member.social.twitter && (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-full"
+                            asChild
+                          >
+                            <Link
+                              href={
+                                member.social.twitter.startsWith("http")
+                                  ? member.social.twitter
+                                  : `https://twitter.com/${member.social.twitter.replace("@", "")}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Twitter className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
                         <Button
                           size="icon"
                           variant="outline"
                           className="rounded-full"
+                          asChild
                         >
-                          <Linkedin className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="rounded-full"
-                        >
-                          <Twitter className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="rounded-full"
-                        >
-                          <Mail className="h-4 w-4" />
+                          <Link href={`mailto:${member.email}`}>
+                            <Mail className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </div>
                     </div>
@@ -533,11 +567,13 @@ const TeamPage = () => {
                         </div>
                       </div>
 
-                      <Button className="w-full gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        {language === "hi"
-                          ? "पूरा प्रोफाइल देखें"
-                          : "View Full Profile"}
+                      <Button className="w-full gap-2" asChild>
+                        <Link href={`/team/${member.id}`}>
+                          <MessageSquare className="h-4 w-4" />
+                          {language === "hi"
+                            ? "पूरा प्रोफाइल देखें"
+                            : "View Full Profile"}
+                        </Link>
                       </Button>
                     </div>
                   </div>
@@ -545,6 +581,60 @@ const TeamPage = () => {
               </Card>
             ))}
           </div>
+        </section>
+
+        {/* Team Photo Gallery */}
+        <section className="mb-16">
+          <Card className="border-0 shadow-xl overflow-hidden">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl font-bold">
+                {language === "hi" ? "टीम गैलरी" : "Team Gallery"}
+              </CardTitle>
+              <CardDescription className="text-lg">
+                {language === "hi"
+                  ? "हमारे पत्रकार कार्य में"
+                  : "Our journalists at work"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src="/owais.jpeg"
+                      alt="Owais Siddiqui at work"
+                      fill
+                      style={{ objectFit: 'contain' }}
+                      className="hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end">
+                    <div className="p-6 text-white">
+                      <h3 className="text-xl font-bold">Owais Siddiqui</h3>
+                      <p className="text-white/80">Chief Editor</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src="/waseem.jpeg"
+                      alt="Waseem Ahmed at work"
+                      fill
+                      style={{ objectFit: 'contain' }}
+                      className="hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end">
+                    <div className="p-6 text-white">
+                      <h3 className="text-xl font-bold">Waseem Ahmed</h3>
+                      <p className="text-white/80">Consulting Editor</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Our Values */}
@@ -646,21 +736,27 @@ const TeamPage = () => {
                   <Button
                     size="lg"
                     className="gap-3 px-8 py-6 text-lg rounded-full shadow-lg"
+                    asChild
                   >
-                    <UserPlus className="h-6 w-6" />
-                    {language === "hi"
-                      ? "खुली पदों पर जाएं"
-                      : "View Open Positions"}
+                    <Link href="/careers">
+                      <UserPlus className="h-6 w-6" />
+                      {language === "hi"
+                        ? "खुली पदों पर जाएं"
+                        : "View Open Positions"}
+                    </Link>
                   </Button>
                   <Button
                     size="lg"
                     variant="outline"
                     className="gap-3 px-8 py-6 text-lg rounded-full border-2"
+                    asChild
                   >
-                    <Mail className="h-6 w-6" />
-                    {language === "hi"
-                      ? "स्वतः आवेदन भेजें"
-                      : "Send Your Portfolio"}
+                    <Link href="mailto:careers@republicmirror.com">
+                      <Mail className="h-6 w-6" />
+                      {language === "hi"
+                        ? "स्वतः आवेदन भेजें"
+                        : "Send Your Portfolio"}
+                    </Link>
                   </Button>
                 </div>
                 <div className="mt-10 p-6 bg-white/50 backdrop-blur-sm rounded-2xl">
@@ -688,6 +784,68 @@ const TeamPage = () => {
                           ? "प्रतिस्पर्धी वेतन"
                           : "Competitive salary"}
                       </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Footer with Team Info */}
+        <section className="mb-8">
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-8">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold mb-4">
+                  {language === "hi" ? "हमसे संपर्क करें" : "Get In Touch"}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {language === "hi"
+                    ? "अगर आपके पास कोई कहानी या सुझाव है, तो हमसे संपर्क करें"
+                    : "If you have a story or suggestion, get in touch with our team"}
+                </p>
+                <div className="flex flex-col md:flex-row justify-center items-center gap-8">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                      <Image
+                        src="/owais.jpeg"
+                        alt="Owais Siddiqui"
+                        width={64}
+                        height={64}
+                        className="object-contain w-full h-full"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Owais Siddiqui</p>
+                      <p className="text-sm text-gray-600">Chief Editor</p>
+                      <Link
+                        href="mailto:owais@republicmirror.com"
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        owais@republicmirror.com
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                      <Image
+                        src="/waseem.jpeg"
+                        alt="Waseem Ahmed"
+                        width={64}
+                        height={64}
+                        className="object-contain w-full h-full"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Waseem Ahmed</p>
+                      <p className="text-sm text-gray-600">Consulting Editor</p>
+                      <Link
+                        href="mailto:wasimahmed.com@gmail.com"
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        wasimahmed.com@gmail.com
+                      </Link>
                     </div>
                   </div>
                 </div>

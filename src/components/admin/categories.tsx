@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,145 +40,298 @@ import {
   Tags,
   TrendingUp,
   Eye,
+  ChevronDown,
 } from "lucide-react";
 
-// Mock categories data
-const initialCategories = [
-  {
-    id: 1,
-    name: "Politics",
-    slug: "politics",
-    description: "Political news and government affairs",
-    articleCount: 45,
-    isActive: true,
-    createdAt: "2024-01-15",
-    color: "#ef4444",
-  },
-  {
-    id: 2,
-    name: "Sports",
-    slug: "sports",
-    description: "Sports news and updates",
-    articleCount: 32,
-    isActive: true,
-    createdAt: "2024-01-15",
-    color: "#22c55e",
-  },
-  {
-    id: 3,
-    name: "Technology",
-    slug: "technology",
-    description: "Tech news and innovations",
-    articleCount: 28,
-    isActive: true,
-    createdAt: "2024-01-15",
-    color: "#3b82f6",
-  },
-  {
-    id: 4,
-    name: "Business",
-    slug: "business",
-    description: "Business and economic news",
-    articleCount: 38,
-    isActive: true,
-    createdAt: "2024-01-15",
-    color: "#f59e0b",
-  },
-  {
-    id: 5,
-    name: "Health",
-    slug: "health",
-    description: "Health and medical news",
-    articleCount: 22,
-    isActive: true,
-    createdAt: "2024-01-15",
-    color: "#ec4899",
-  },
-  {
-    id: 6,
-    name: "Entertainment",
-    slug: "entertainment",
-    description: "Entertainment and celebrity news",
-    articleCount: 19,
-    isActive: false,
-    createdAt: "2024-01-15",
-    color: "#8b5cf6",
-  },
-];
-
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [showParentDropdown, setShowParentDropdown] = useState(false);
+  const [showEditParentDropdown, setShowEditParentDropdown] = useState(false);
+  const parentDropdownRef = useRef(null);
+  const editParentDropdownRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     description: "",
     color: "#3b82f6",
+    icon: "",
+    seoTitle: "",
+    seoDescription: "",
+    isActive: true,
+    featured: false,
+    order: 0,
+    parentCategory: "",
   });
 
-  const handleCreateCategory = () => {
-    const newCategory = {
-      id: categories.length + 1,
-      name: formData.name,
-      slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
-      description: formData.description,
-      articleCount: 0,
-      isActive: true,
-      createdAt: new Date().toISOString().split("T")[0],
-      color: formData.color,
+  const token = localStorage.getItem('admin-token');
+
+  // Fetch categories from API
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (parentDropdownRef.current && !parentDropdownRef.current.contains(event.target)) {
+        setShowParentDropdown(false);
+      }
+      if (editParentDropdownRef.current && !editParentDropdownRef.current.contains(event.target)) {
+        setShowEditParentDropdown(false);
+      }
     };
-    setCategories([...categories, newCategory]);
-    setFormData({ name: "", description: "", color: "#3b82f6" });
-    setIsCreateDialogOpen(false);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/categories");
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories");
+      }
+      const data = await response.json();
+      setCategories(data.categories || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+      console.error("Error fetching categories:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleEditCategory = () => {
-    setCategories(
-      categories.map((cat) =>
-        cat.id === editingCategory.id
-          ? {
-              ...cat,
-              name: formData.name,
-              description: formData.description,
-              color: formData.color,
-              slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
-            }
-          : cat
-      )
-    );
-    setIsEditDialogOpen(false);
-    setEditingCategory(null);
-    setFormData({ name: "", description: "", color: "#3b82f6" });
+  // Get parent categories (categories without parentCategory)
+  const getParentCategories = () => {
+    return categories.filter(cat => !cat.parentCategory && !cat.parentCategoryName);
   };
 
-  const handleDeleteCategory = (id) => {
-    setCategories(categories.filter((cat) => cat.id !== id));
+  // Calculate total articles (you'll need to implement this based on your API)
+  const calculateTotalArticles = () => {
+    // This is a placeholder - you'll need to get actual article counts from your API
+    return categories.reduce((sum, cat) => sum + (cat.articleCount || 0), 0);
   };
 
-  const toggleCategoryStatus = (id) => {
-    setCategories(
-      categories.map((cat) =>
-        cat.id === id ? { ...cat, isActive: !cat.isActive } : cat
-      )
-    );
+  const handleCreateCategory = async () => {
+    try {
+      const categoryData = {
+        ...formData,
+        parentCategory: formData.parentCategory || null
+      };
+
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(categoryData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create category");
+      }
+
+      await fetchCategories(); // Refresh the list
+      setFormData({
+        name: "",
+        slug: "",
+        description: "",
+        color: "#3b82f6",
+        icon: "",
+        seoTitle: "",
+        seoDescription: "",
+        isActive: true,
+        featured: false,
+        order: 0,
+        parentCategory: "",
+      });
+      setIsCreateDialogOpen(false);
+    } catch (err) {
+      console.error("Error creating category:", err);
+      alert("Failed to create category");
+    }
+  };
+
+  const handleEditCategory = async () => {
+    if (!editingCategory) return;
+
+    try {
+      const categoryData = {
+        ...formData,
+        parentCategory: formData.parentCategory || null
+      };
+
+      const response = await fetch(`/api/categories/${editingCategory._id}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(categoryData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update category");
+      }
+
+      await fetchCategories(); // Refresh the list
+      setIsEditDialogOpen(false);
+      setEditingCategory(null);
+      setFormData({
+        name: "",
+        slug: "",
+        description: "",
+        color: "#3b82f6",
+        icon: "",
+        seoTitle: "",
+        seoDescription: "",
+        isActive: true,
+        featured: false,
+        order: 0,
+        parentCategory: "",
+      });
+    } catch (err) {
+      console.error("Error updating category:", err);
+      alert("Failed to update category");
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete category");
+      }
+
+      await fetchCategories(); // Refresh the list
+    } catch (err) {
+      console.error("Error deleting category:", err);
+      alert("Failed to delete category");
+    }
+  };
+
+  const toggleCategoryStatus = async (id, currentStatus) => {
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isActive: !currentStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update category status");
+      }
+
+      await fetchCategories(); // Refresh the list
+    } catch (err) {
+      console.error("Error updating category status:", err);
+      alert("Failed to update category status");
+    }
   };
 
   const openEditDialog = (category) => {
     setEditingCategory(category);
+    // Get parent category ID - check both parentCategory object and parentCategoryName
+    let parentCategoryId = "";
+    if (category.parentCategory && category.parentCategory._id) {
+      parentCategoryId = category.parentCategory._id;
+    } else if (category.parentCategoryName) {
+      // Find the parent category by name to get its ID
+      const parentCat = categories.find(cat => 
+        cat.name === category.parentCategoryName || 
+        cat._id === category.parentCategory
+      );
+      parentCategoryId = parentCat?._id || "";
+    }
+    
     setFormData({
-      name: category.name,
-      description: category.description,
-      color: category.color,
+      name: category.name || "",
+      slug: category.slug || "",
+      description: category.description || "",
+      color: category.color || "#3b82f6",
+      icon: category.icon || "",
+      seoTitle: category.seoTitle || "",
+      seoDescription: category.seoDescription || "",
+      isActive: category.isActive || true,
+      featured: category.featured || false,
+      order: category.order || 0,
+      parentCategory: parentCategoryId,
     });
     setIsEditDialogOpen(true);
   };
 
-  const totalArticles = categories.reduce(
-    (sum, cat) => sum + cat.articleCount,
-    0
-  );
+  // Get parent category name for display
+  const getParentCategoryName = (category) => {
+    if (category.parentCategory && category.parentCategory.name) {
+      return category.parentCategory.name;
+    }
+    if (category.parentCategoryName) {
+      return category.parentCategoryName;
+    }
+    return "None";
+  };
+
+  // Get parent category name by ID for dropdown display
+  const getParentCategoryNameById = (id) => {
+    if (!id) return "None (Main Category)";
+    const parentCat = categories.find(cat => cat._id === id);
+    return parentCat ? parentCat.name : "None (Main Category)";
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const totalArticles = calculateTotalArticles();
   const activeCategories = categories.filter((cat) => cat.isActive).length;
+  const parentCategories = getParentCategories();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading categories...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center text-destructive">
+          <p>Error: {error}</p>
+          <Button onClick={fetchCategories} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -197,7 +350,7 @@ export default function CategoriesPage() {
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Category</DialogTitle>
               <DialogDescription>
@@ -205,16 +358,31 @@ export default function CategoriesPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Category Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Enter category name"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Category Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="Enter category name"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="slug">Slug *</Label>
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) =>
+                      setFormData({ ...formData, slug: e.target.value })
+                    }
+                    placeholder="category-slug"
+                    required
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
@@ -227,25 +395,139 @@ export default function CategoriesPage() {
                   placeholder="Enter category description"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="color">Category Color</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="color"
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) =>
+                        setFormData({ ...formData, color: e.target.value })
+                      }
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={formData.color}
+                      onChange={(e) =>
+                        setFormData({ ...formData, color: e.target.value })
+                      }
+                      placeholder="#3b82f6"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="icon">Icon</Label>
+                  <Input
+                    id="icon"
+                    value={formData.icon}
+                    onChange={(e) =>
+                      setFormData({ ...formData, icon: e.target.value })
+                    }
+                    placeholder="🇮🇳"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="order">Display Order</Label>
+                  <Input
+                    id="order"
+                    type="number"
+                    value={formData.order}
+                    onChange={(e) =>
+                      setFormData({ ...formData, order: parseInt(e.target.value) || 0 })
+                    }
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="parentCategory">Parent Category</Label>
+                  <div className="relative" ref={parentDropdownRef}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => setShowParentDropdown(!showParentDropdown)}
+                    >
+                      <span>{getParentCategoryNameById(formData.parentCategory)}</span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </button>
+                    
+                    {showParentDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                        <div
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
+                          onClick={() => {
+                            setFormData({ ...formData, parentCategory: "" });
+                            setShowParentDropdown(false);
+                          }}
+                        >
+                          None (Main Category)
+                        </div>
+                        {parentCategories.map((category) => (
+                          <div
+                            key={category._id}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setFormData({ ...formData, parentCategory: category._id });
+                              setShowParentDropdown(false);
+                            }}
+                          >
+                            {category.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
               <div>
-                <Label htmlFor="color">Category Color</Label>
+                <Label htmlFor="seoTitle">SEO Title</Label>
+                <Input
+                  id="seoTitle"
+                  value={formData.seoTitle}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seoTitle: e.target.value })
+                  }
+                  placeholder="SEO Title for search engines"
+                />
+              </div>
+              <div>
+                <Label htmlFor="seoDescription">SEO Description</Label>
+                <Textarea
+                  id="seoDescription"
+                  value={formData.seoDescription}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seoDescription: e.target.value })
+                  }
+                  placeholder="SEO Description for search engines"
+                />
+              </div>
+              <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <Input
-                    id="color"
-                    type="color"
-                    value={formData.color}
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
                     onChange={(e) =>
-                      setFormData({ ...formData, color: e.target.value })
+                      setFormData({ ...formData, isActive: e.target.checked })
                     }
-                    className="w-16 h-10"
+                    className="rounded"
                   />
-                  <Input
-                    value={formData.color}
+                  <Label htmlFor="isActive">Active</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    checked={formData.featured}
                     onChange={(e) =>
-                      setFormData({ ...formData, color: e.target.value })
+                      setFormData({ ...formData, featured: e.target.checked })
                     }
-                    placeholder="#3b82f6"
+                    className="rounded"
                   />
+                  <Label htmlFor="featured">Featured</Label>
                 </div>
               </div>
             </div>
@@ -304,14 +586,14 @@ export default function CategoriesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Articles</CardTitle>
+            <CardTitle className="text-sm font-medium">Main Categories</CardTitle>
             <Tags className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(totalArticles / categories.length)}
+              {parentCategories.length}
             </div>
-            <p className="text-xs text-muted-foreground">Per category</p>
+            <p className="text-xs text-muted-foreground">Parent categories</p>
           </CardContent>
         </Card>
       </div>
@@ -322,89 +604,105 @@ export default function CategoriesPage() {
           <CardTitle>All Categories</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Articles</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <div>
-                        <div className="font-medium">{category.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          /{category.slug}
+          {categories.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No categories found. Create your first category!
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Parent Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => (
+                  <TableRow key={category._id}>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: category.color || "#3b82f6" }}
+                        />
+                        <div>
+                          <div className="font-medium">{category.name}</div>
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                            <span>/{category.slug}</span>
+                            {category.icon && <span>{category.icon}</span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-w-xs">
-                    <div className="truncate">{category.description}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{category.articleCount}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={category.isActive ? "default" : "secondary"}
-                    >
-                      {category.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{category.createdAt}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem
-                          onClick={() => openEditDialog(category)}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => toggleCategoryStatus(category.id)}
-                        >
-                          {category.isActive ? "Deactivate" : "Activate"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteCategory(category.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <div className="truncate">{category.description || "No description"}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getParentCategoryName(category)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={category.isActive ? "default" : "secondary"}
+                        className="cursor-pointer"
+                        onClick={() => toggleCategoryStatus(category._id, category.isActive)}
+                      >
+                        {category.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      {category.featured && (
+                        <Badge variant="outline" className="ml-2">
+                          Featured
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDate(category.createdAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(category)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleCategoryStatus(category._id, category.isActive)}
+                          >
+                            {category.isActive ? "Deactivate" : "Activate"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteCategory(category._id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
             <DialogDescription>
@@ -412,16 +710,31 @@ export default function CategoriesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">Category Name</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Enter category name"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-name">Category Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="Enter category name"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-slug">Slug *</Label>
+                <Input
+                  id="edit-slug"
+                  value={formData.slug}
+                  onChange={(e) =>
+                    setFormData({ ...formData, slug: e.target.value })
+                  }
+                  placeholder="category-slug"
+                  required
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="edit-description">Description</Label>
@@ -434,25 +747,139 @@ export default function CategoriesPage() {
                 placeholder="Enter category description"
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-color">Category Color</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="edit-color"
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) =>
+                      setFormData({ ...formData, color: e.target.value })
+                    }
+                    className="w-16 h-10"
+                  />
+                  <Input
+                    value={formData.color}
+                    onChange={(e) =>
+                      setFormData({ ...formData, color: e.target.value })
+                    }
+                    placeholder="#3b82f6"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-icon">Icon</Label>
+                <Input
+                  id="edit-icon"
+                  value={formData.icon}
+                  onChange={(e) =>
+                    setFormData({ ...formData, icon: e.target.value })
+                  }
+                  placeholder="🇮🇳"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-order">Display Order</Label>
+                <Input
+                  id="edit-order"
+                  type="number"
+                  value={formData.order}
+                  onChange={(e) =>
+                    setFormData({ ...formData, order: parseInt(e.target.value) || 0 })
+                  }
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-parentCategory">Parent Category</Label>
+                <div className="relative" ref={editParentDropdownRef}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => setShowEditParentDropdown(!showEditParentDropdown)}
+                  >
+                    <span>{getParentCategoryNameById(formData.parentCategory)}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </button>
+                  
+                  {showEditParentDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                      <div
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b"
+                        onClick={() => {
+                          setFormData({ ...formData, parentCategory: "" });
+                          setShowEditParentDropdown(false);
+                        }}
+                      >
+                        None (Main Category)
+                      </div>
+                      {parentCategories.map((category) => (
+                        <div
+                          key={category._id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setFormData({ ...formData, parentCategory: category._id });
+                            setShowEditParentDropdown(false);
+                          }}
+                        >
+                          {category.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
             <div>
-              <Label htmlFor="edit-color">Category Color</Label>
+              <Label htmlFor="edit-seoTitle">SEO Title</Label>
+              <Input
+                id="edit-seoTitle"
+                value={formData.seoTitle}
+                onChange={(e) =>
+                  setFormData({ ...formData, seoTitle: e.target.value })
+                }
+                placeholder="SEO Title for search engines"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-seoDescription">SEO Description</Label>
+              <Textarea
+                id="edit-seoDescription"
+                value={formData.seoDescription}
+                onChange={(e) =>
+                  setFormData({ ...formData, seoDescription: e.target.value })
+                }
+                placeholder="SEO Description for search engines"
+              />
+            </div>
+            <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <Input
-                  id="edit-color"
-                  type="color"
-                  value={formData.color}
+                <input
+                  type="checkbox"
+                  id="edit-isActive"
+                  checked={formData.isActive}
                   onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
+                    setFormData({ ...formData, isActive: e.target.checked })
                   }
-                  className="w-16 h-10"
+                  className="rounded"
                 />
-                <Input
-                  value={formData.color}
+                <Label htmlFor="edit-isActive">Active</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-featured"
+                  checked={formData.featured}
                   onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
+                    setFormData({ ...formData, featured: e.target.checked })
                   }
-                  placeholder="#3b82f6"
+                  className="rounded"
                 />
+                <Label htmlFor="edit-featured">Featured</Label>
               </div>
             </div>
           </div>

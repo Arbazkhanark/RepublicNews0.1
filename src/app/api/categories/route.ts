@@ -7,17 +7,62 @@ import { getCategoryModel } from "@/lib/models"
 // -----------------------------
 // ✅ GET /api/categories
 // -----------------------------
+// export const GET = async () => {
+//   try {
+//     await connectToDatabase()
+//     const Category = getCategoryModel()
+//     const categories = await Category.find({ isActive: true }).sort({ order: 1 }).lean().populate()
+//     return NextResponse.json({ categories })
+//   } catch (error) {
+//     console.error("❌ Fetch categories error:", error)
+//     return NextResponse.json({ error: "Failed to fetch categories. Please try again later." }, { status: 500 })
+//   }
+// }
+
+
+
+// GET all categories (public - no auth required)
 export const GET = async () => {
   try {
-    await connectToDatabase()
-    const Category = getCategoryModel()
-    const categories = await Category.find({ isActive: true }).sort({ order: 1 }).lean()
-    return NextResponse.json({ categories })
+    await connectToDatabase();
+    const Category = getCategoryModel();
+
+    const categories = await Category.find({})
+      .sort({ order: 1, createdAt: -1 })
+      .populate({
+        path: 'parentCategory',
+        select: '_id name slug description color icon isActive featured',
+      })
+      .populate({
+        path: 'createdBy',
+        select: '_id name email',
+      })
+      .lean()
+      .exec();
+
+    // Convert MongoDB documents to plain objects
+    const categoriesWithDetails = categories.map(category => {
+      const categoryObj = { ...category };
+      
+      // Add parentCategoryName if parentCategory exists
+      if (category.parentCategory && typeof category.parentCategory === 'object') {
+        categoryObj.parentCategoryName = category.parentCategory.name;
+      } else if (category.parentCategoryName) {
+        // Keep existing parentCategoryName if it exists
+        categoryObj.parentCategoryName = category.parentCategoryName;
+      }
+      
+      return categoryObj;
+    });
+
+    return NextResponse.json({ categories: categoriesWithDetails });
   } catch (error) {
-    console.error("❌ Fetch categories error:", error)
-    return NextResponse.json({ error: "Failed to fetch categories. Please try again later." }, { status: 500 })
+    console.error("❌ Fetch categories error:", error);
+    return NextResponse.json({ 
+      error: "Failed to fetch categories. Please try again later." 
+    }, { status: 500 });
   }
-}
+};
 
 // -----------------------------
 // ✅ POST /api/categories

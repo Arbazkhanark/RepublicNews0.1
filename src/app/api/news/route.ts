@@ -31,6 +31,67 @@ interface QueryFilters {
 /**
  * GET: Fetch all articles with filters, search, pagination
  */
+// export const GET = async (request: NextRequest) => {
+//   try {
+//     await connectToDatabase();
+//     const { searchParams } = new URL(request.url);
+//     const page = Math.max(Number(searchParams.get("page")) || 1, 1);
+//     const limit = Math.min(Number(searchParams.get("limit")) || 10, 50); // cap limit
+//     const category = searchParams.get("category");
+//     const status = searchParams.get("status");
+//     const language = searchParams.get("language");
+//     const search = searchParams.get("search");
+
+//     // Build query
+//     const query: QueryFilters = {};
+//     if (category) query.categoryId = category;
+//     if (status) query.status = status;
+
+//     // ✅ Language filtering (based on titleHi or title fields)
+//     if (language === "hi") {
+//       query.titleHi = { $exists: true, $ne: "" };
+//     } else if (language === "en") {
+//       query.title = { $exists: true, $ne: "" };
+//     }
+
+//     // 🔍 Search logic
+//     if (search) {
+//       query.$or = [
+//         { title: { $regex: search, $options: "i" } },
+//         { titleHi: { $regex: search, $options: "i" } },
+//         { content: { $regex: search, $options: "i" } },
+//         { contentHi: { $regex: search, $options: "i" } },
+//       ];
+//     }
+
+//     const skip = (page - 1) * limit;
+
+//     getCategoryModel();
+//     const Article = getArticleModel();
+//     const articles = await Article.find(query)
+//       .populate("category")
+//       .sort({ createdAt: -1 }) // Optional: Latest first
+//       .skip(skip)
+//       .limit(limit);
+
+
+//     const total = await Article.countDocuments(query);
+
+//     return response(true, {
+//       articles,
+//       pagination: {
+//         page,
+//         limit,
+//         total,
+//         pages: Math.ceil(total / limit),
+//       },
+//     });
+//   } catch (error) {
+//     console.error("GET /articles error:", error);
+//     return response(false, null, "Failed to fetch articles", 500);
+//   }
+// };
+
 export const GET = async (request: NextRequest) => {
   try {
     await connectToDatabase();
@@ -68,17 +129,46 @@ export const GET = async (request: NextRequest) => {
 
     getCategoryModel();
     const Article = getArticleModel();
+    const Category = getCategoryModel();
+    
     const articles = await Article.find(query)
       .populate("category")
-      .sort({ createdAt: -1 }) // Optional: Latest first
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
+    // Get all category IDs from articles to fetch parent categories
+    const categoryIds = articles
+      .map(article => article.category?._id)
+      .filter(id => id);
+    
+    // Fetch categories with their parent categories
+    const categoriesWithParents = await Category.find({
+      _id: { $in: categoryIds }
+    }).populate('parentCategory');
+
+    // Create a map for quick lookup
+    const categoryMap = new Map();
+    categoriesWithParents.forEach(cat => {
+      categoryMap.set(cat._id.toString(), cat);
+    });
+
+    // Merge parent category data into articles
+    const articlesWithParentCategories = articles.map(article => {
+      const articleObj = article.toObject();
+      if (article.category && article.category._id) {
+        const categoryWithParent = categoryMap.get(article.category._id.toString());
+        if (categoryWithParent) {
+          articleObj.category = categoryWithParent;
+        }
+      }
+      return articleObj;
+    });
 
     const total = await Article.countDocuments(query);
 
     return response(true, {
-      articles,
+      articles: articlesWithParentCategories,
       pagination: {
         page,
         limit,
@@ -91,6 +181,8 @@ export const GET = async (request: NextRequest) => {
     return response(false, null, "Failed to fetch articles", 500);
   }
 };
+
+
 
 interface ArticleData {
   title?: string;

@@ -42,16 +42,33 @@ import {
   PlusCircle,
   Loader2,
   X,
+  FolderTree,
+  FolderOpen,
 } from "lucide-react";
 import Link from "next/link";
+
+interface ParentCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parentCategory?: ParentCategory | null;
+  isActive?: boolean;
+  featured?: boolean;
+}
 
 interface Category {
   _id: string;
   name: string;
   slug: string;
+  description?: string;
   color?: string;
   icon?: string;
-  parentCategoryName?: string | null;
+  parentCategory?: ParentCategory | string | null;
+  parentCategoryName?: string;
+  isActive?: boolean;
+  featured?: boolean;
+  order?: number;
 }
 
 interface Article {
@@ -63,7 +80,7 @@ interface Article {
   excerpt?: string;
   excerptHi?: string;
   slug: string;
-  category: string | Category; // Can be ID string or populated Category object
+  category: Category;
   author:
     | string
     | { _id: string; name: string; email?: string; avatar?: string };
@@ -267,29 +284,56 @@ export default function ArticlesPage() {
     return article.title || article.titleHi || "Untitled Article";
   };
 
-  // Helper function to get category name safely
-  const getCategoryName = (article: Article): string => {
-    if (!article.category) return "Uncategorized";
+  // Helper function to get parent category name
+  const getParentCategoryName = (article: Article): string | null => {
+    if (!article.category) return null;
 
-    if (typeof article.category === "object" && article.category !== null) {
-      return article.category.name || "Uncategorized";
+    const category = article.category;
+    
+    // Check if parentCategory is an object
+    if (category.parentCategory && typeof category.parentCategory === 'object') {
+      return (category.parentCategory as ParentCategory).name || null;
     }
-
-    return "Uncategorized";
+    
+    // Check if parentCategoryName exists
+    if (category.parentCategoryName) {
+      return category.parentCategoryName;
+    }
+    
+    return null;
   };
 
-  // Helper function to get category display name with parent
-  const getDisplayCategory = (article: Article): string => {
-    const categoryName = getCategoryName(article);
-
-    if (typeof article.category === "object" && article.category !== null) {
-      const category = article.category as Category;
-      if (category.parentCategoryName) {
-        return `${category.parentCategoryName} > ${categoryName}`;
-      }
+  // Helper function to get category display with parent hierarchy
+  const getCategoryHierarchy = (article: Article): { name: string; isParent: boolean }[] => {
+    const hierarchy = [];
+    
+    if (!article.category) return [];
+    
+    const category = article.category;
+    const parentCategoryName = getParentCategoryName(article);
+    
+    if (parentCategoryName) {
+      hierarchy.push({ name: parentCategoryName, isParent: true });
     }
+    
+    hierarchy.push({ name: category.name, isParent: false });
+    
+    return hierarchy;
+  };
 
-    return categoryName;
+  // Helper function to get category display text
+  const getDisplayCategory = (article: Article): string => {
+    const hierarchy = getCategoryHierarchy(article);
+    
+    if (hierarchy.length === 0) {
+      return "Uncategorized";
+    }
+    
+    if (hierarchy.length === 1) {
+      return hierarchy[0].name;
+    }
+    
+    return hierarchy.map(item => item.name).join(" > ");
   };
 
   // Helper function to get author name safely
@@ -306,12 +350,21 @@ export default function ArticlesPage() {
     return article.sourcePersonSocial || {};
   };
 
-  // Extract unique categories for filter dropdown
+  // Extract unique categories for filter dropdown (including parent categories)
   const uniqueCategories = Array.from(
     new Set(
-      articles
-        .map((article) => getCategoryName(article))
-        .filter((category) => category !== "Uncategorized")
+      articles.flatMap((article) => {
+        const categories = [];
+        if (article.category) {
+          categories.push(article.category.name);
+          
+          const parentName = getParentCategoryName(article);
+          if (parentName) {
+            categories.push(parentName);
+          }
+        }
+        return categories;
+      }).filter((category) => category)
     )
   );
 
@@ -421,57 +474,87 @@ export default function ArticlesPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    articles.map((article) => (
-                      <TableRow key={article._id}>
-                        <TableCell className="font-medium">
-                          <div className="max-w-[300px] truncate">
-                            {getDisplayTitle(article)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {getDisplayCategory(article)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{getAuthorName(article)}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusBadge(article.status)}>
-                            {article.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{article.meta?.views || 0}</TableCell>
-                        <TableCell>
-                          {article.publishedAt
-                            ? new Date(article.publishedAt).toLocaleDateString()
-                            : new Date(article.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePreview(article)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link
-                                href={`/admin/articles/${article._id}/edit`}
+                    articles.map((article) => {
+                      const categoryHierarchy = getCategoryHierarchy(article);
+                      
+                      return (
+                        <TableRow key={article._id}>
+                          <TableCell className="font-medium">
+                            <div className="max-w-[300px] truncate">
+                              {getDisplayTitle(article)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {categoryHierarchy.length > 0 ? (
+                                categoryHierarchy.map((item, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center gap-1"
+                                  >
+                                    {item.isParent ? (
+                                      <>
+                                        <FolderTree className="h-3 w-3 text-muted-foreground" />
+                                        <Badge variant="outline" className="text-xs">
+                                          {item.name}
+                                        </Badge>
+                                        <span className="text-muted-foreground text-xs">→</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FolderOpen className="h-3 w-3 text-muted-foreground" />
+                                        <Badge variant="secondary" className="text-xs">
+                                          {item.name}
+                                        </Badge>
+                                      </>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <Badge variant="outline">Uncategorized</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{getAuthorName(article)}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusBadge(article.status)}>
+                              {article.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{article.meta?.views || 0}</TableCell>
+                          <TableCell>
+                            {article.publishedAt
+                              ? new Date(article.publishedAt).toLocaleDateString()
+                              : new Date(article.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePreview(article)}
                               >
-                                <Edit className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(article._id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link
+                                  href={`/admin/articles/${article._id}/edit`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(article._id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -578,6 +661,27 @@ export default function ArticlesPage() {
               </div>
 
               <div>
+                <h3 className="text-lg font-semibold mb-2">Category Information</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4" />
+                    <span className="font-medium">Category:</span>
+                    <Badge variant="outline">{selectedArticle.category?.name || "Uncategorized"}</Badge>
+                  </div>
+                  {getParentCategoryName(selectedArticle) && (
+                    <div className="flex items-center gap-2">
+                      <FolderTree className="h-4 w-4" />
+                      <span className="font-medium">Parent Category:</span>
+                      <Badge variant="secondary">{getParentCategoryName(selectedArticle)}</Badge>
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    Full Hierarchy: {getDisplayCategory(selectedArticle)}
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <h3 className="text-lg font-semibold mb-2">Content</h3>
                 <div className="prose max-w-none whitespace-pre-wrap">
                   {selectedArticle.content}
@@ -599,10 +703,6 @@ export default function ArticlesPage() {
                 <div>
                   <h4 className="font-semibold">Article Details</h4>
                   <div className="space-y-2 text-sm">
-                    <p>
-                      <span className="font-medium">Category:</span>{" "}
-                      {getDisplayCategory(selectedArticle)}
-                    </p>
                     <p>
                       <span className="font-medium">Author:</span>{" "}
                       {getAuthorName(selectedArticle)}
