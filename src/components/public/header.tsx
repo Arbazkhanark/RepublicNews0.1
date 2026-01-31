@@ -120,7 +120,7 @@ export function PublicHeader() {
     },
     {
       href: "/fake-news",
-      label: language === "hi" ? "जाली खबरें" : "FAKE NEWS",
+      label: language === "hi" ? "फेक न्यूज़" : "FAKE NEWS",
     },
     {
       href: "/opinion",

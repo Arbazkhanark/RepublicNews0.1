@@ -64,7 +64,7 @@ export function PublicFooter() {
 
               {/* YouTube */}
               <Link
-                href="https://www.youtube.com/@therepublicmirror"
+                href="https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-300 hover:text-white transition-colors"
