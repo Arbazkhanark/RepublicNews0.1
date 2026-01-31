@@ -46,3 +46,33 @@ export const PUT = withAdminAuth(async (req: NextRequest, _user: UserFromToken) 
 
 
 
+
+
+
+// -----------------------------
+// ✅ DELETE /api/categories
+// -----------------------------
+export const DELETE = withAdminAuth(async (req: NextRequest, _user: UserFromToken) => {
+  try {
+    await connectToDatabase()
+    const url = new URL(req.url)
+    const id = url.pathname.split("/").pop()
+
+    if (!id) {
+      return NextResponse.json({ error: "Category ID is required." }, { status: 400 })
+    }
+
+    const Category = getCategoryModel()
+    const deleted = await Category.findByIdAndDelete(id)
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Category not found." }, { status: 404 })
+    }
+
+    return NextResponse.json({ message: "🗑️ Category deleted successfully." })
+  } catch (error) {
+    console.error("❌ Delete category error:", error)
+    return NextResponse.json({ error: "Failed to delete category. Please try again." }, { status: 500 })
+  }
+})
+

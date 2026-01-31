@@ -127,7 +127,8 @@ export function PublicHeader() {
       label: language === "hi" ? "राय" : "OPINION",
     },
     {
-      href: "https://www.youtube.com/@therepublicmirror",
+      // href: "https://www.youtube.com/@therepublicmirror",
+      href:"https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw",
       label: language === "hi" ? "वीडियो" : "VIDEOS",
       isExternal: true,
     },

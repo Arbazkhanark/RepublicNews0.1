@@ -820,10 +820,10 @@ const TeamPage = () => {
                       <p className="font-semibold">Owais Siddiqui</p>
                       <p className="text-sm text-gray-600">Chief Editor</p>
                       <Link
-                        href="mailto:owais@republicmirror.com"
+                        href="mailto:editor@republicmirror.com"
                         className="text-sm text-red-600 hover:underline"
                       >
-                        owais@republicmirror.com
+                        editor@republicmirror.com
                       </Link>
                     </div>
                   </div>
