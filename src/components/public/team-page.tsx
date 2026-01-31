@@ -404,7 +404,7 @@ const TeamPage = () => {
           </Card>
         </section>
 
-        {/* Leadership Team */}
+        {/* Leadership Team - Fixed Image Display */}
         <section className="mb-16">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-3 mb-4">
@@ -435,14 +435,19 @@ const TeamPage = () => {
                   <div className="flex flex-col lg:flex-row gap-8">
                     <div className="flex flex-col items-center lg:items-start">
                       <div className="relative">
-                        {/* Fixed Image Display */}
-                        <div className="h-32 w-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {/* Fixed Circle Image with proper cover */}
+                        <div className="h-32 w-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gray-100 relative">
                           <Image
                             src={member.avatar}
                             alt={member.name}
-                            width={128}
-                            height={128}
-                            className="w-full h-full object-contain"
+                            fill
+                            sizes="128px"
+                            style={{
+                              objectFit: "cover",
+                              objectPosition: "center center"
+                            }}
+                            className="rounded-full"
+                            priority
                           />
                         </div>
                         <div className="absolute -bottom-2 -right-2 bg-red-600 text-white p-2 rounded-full">
@@ -583,7 +588,7 @@ const TeamPage = () => {
           </div>
         </section>
 
-        {/* Team Photo Gallery */}
+        {/* Team Photo Gallery - Fixed Rectangle Images */}
         <section className="mb-16">
           <Card className="border-0 shadow-xl overflow-hidden">
             <CardHeader className="text-center">
@@ -598,37 +603,47 @@ const TeamPage = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg">
+                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg group">
                   <div className="relative w-full h-full">
                     <Image
                       src="/owais.jpeg"
                       alt="Owais Siddiqui at work"
                       fill
-                      style={{ objectFit: 'contain' }}
-                      className="hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      style={{
+                        objectFit: "cover",
+                        objectPosition: "center center"
+                      }}
+                      className="group-hover:scale-105 transition-transform duration-500"
+                      priority
                     />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
                     <div className="p-6 text-white">
-                      <h3 className="text-xl font-bold">Owais Siddiqui</h3>
-                      <p className="text-white/80">Chief Editor</p>
+                      <h3 className="text-2xl font-bold">Owais Siddiqui</h3>
+                      <p className="text-white/90 text-lg">Chief Editor</p>
                     </div>
                   </div>
                 </div>
-                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg">
+                <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg group">
                   <div className="relative w-full h-full">
                     <Image
                       src="/waseem.jpeg"
                       alt="Waseem Ahmed at work"
                       fill
-                      style={{ objectFit: 'contain' }}
-                      className="hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      style={{
+                        objectFit: "cover",
+                        objectPosition: "center center"
+                      }}
+                      className="group-hover:scale-105 transition-transform duration-500"
+                      priority
                     />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
                     <div className="p-6 text-white">
-                      <h3 className="text-xl font-bold">Waseem Ahmed</h3>
-                      <p className="text-white/80">Consulting Editor</p>
+                      <h3 className="text-2xl font-bold">Waseem Ahmed</h3>
+                      <p className="text-white/90 text-lg">Consulting Editor</p>
                     </div>
                   </div>
                 </div>
@@ -637,162 +652,7 @@ const TeamPage = () => {
           </Card>
         </section>
 
-        {/* Our Values */}
-        <section className="mb-16">
-          <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-r from-gray-900 to-gray-800 text-white">
-            <CardContent className="p-12">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold mb-4">
-                  {language === "hi" ? "हमारे मूल्य" : "Our Core Values"}
-                </h2>
-                <p className="text-xl opacity-90 max-w-2xl mx-auto">
-                  {language === "hi"
-                    ? "जिन सिद्धांतों पर हमारी पत्रकारिता आधारित है"
-                    : "The principles that guide our journalism"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
-                    <Eye className="h-8 w-8" />
-                  </div>
-                  <h4 className="font-bold text-xl mb-4">
-                    {language === "hi" ? "पारदर्शिता" : "Transparency"}
-                  </h4>
-                  <p className="opacity-90">
-                    {language === "hi"
-                      ? "हर रिपोर्ट के पीछे स्पष्ट सोर्सिंग और मेथडोलॉजी"
-                      : "Clear sourcing and methodology behind every report"}
-                  </p>
-                </div>
-
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
-                    <Shield className="h-8 w-8" />
-                  </div>
-                  <h4 className="font-bold text-xl mb-4">
-                    {language === "hi" ? "सत्यता" : "Truth"}
-                  </h4>
-                  <p className="opacity-90">
-                    {language === "hi"
-                      ? "सत्य के प्रति अटूट प्रतिबद्धता, चाहे परिणाम कुछ भी हो"
-                      : "Unwavering commitment to truth, regardless of consequences"}
-                  </p>
-                </div>
-
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
-                    <Heart className="h-8 w-8" />
-                  </div>
-                  <h4 className="font-bold text-xl mb-4">
-                    {language === "hi" ? "निष्पक्षता" : "Impartiality"}
-                  </h4>
-                  <p className="opacity-90">
-                    {language === "hi"
-                      ? "बिना किसी पूर्वाग्रह के संतुलित रिपोर्टिंग"
-                      : "Balanced reporting without any bias or prejudice"}
-                  </p>
-                </div>
-
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-6">
-                    <Clock className="h-8 w-8" />
-                  </div>
-                  <h4 className="font-bold text-xl mb-4">
-                    {language === "hi" ? "समयबद्धता" : "Timeliness"}
-                  </h4>
-                  <p className="opacity-90">
-                    {language === "hi"
-                      ? "सही जानकारी सही समय पर पहुँचाना"
-                      : "Delivering accurate information at the right time"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Join Our Team - Enhanced */}
-        <section className="mb-16">
-          <Card className="border-0 shadow-xl overflow-hidden bg-gradient-to-br from-red-50 via-white to-blue-50">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
-            <CardContent className="p-12 text-center relative">
-              <div className="max-w-2xl mx-auto">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl mb-6 shadow-lg">
-                  <Newspaper className="h-10 w-10 text-white" />
-                </div>
-                <h2 className="text-4xl font-bold mb-6">
-                  {language === "hi"
-                    ? "हमारी टीम का हिस्सा बनें"
-                    : "Join Our Journalism Team"}
-                </h2>
-                <p className="text-xl text-gray-700 mb-10">
-                  {language === "hi"
-                    ? "क्या आप सत्य और पारदर्शिता के लिए प्रतिबद्ध हैं? हम ऐसे प्रतिभाशाली पत्रकारों की तलाश में हैं जो गहन शोध और निष्पक्ष रिपोर्टिंग में विश्वास रखते हैं।"
-                    : "Are you committed to truth and transparency? We're looking for talented journalists who believe in in-depth research and impartial reporting."}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                  <Button
-                    size="lg"
-                    className="gap-3 px-8 py-6 text-lg rounded-full shadow-lg"
-                    asChild
-                  >
-                    <Link href="/careers">
-                      <UserPlus className="h-6 w-6" />
-                      {language === "hi"
-                        ? "खुली पदों पर जाएं"
-                        : "View Open Positions"}
-                    </Link>
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="gap-3 px-8 py-6 text-lg rounded-full border-2"
-                    asChild
-                  >
-                    <Link href="mailto:careers@republicmirror.com">
-                      <Mail className="h-6 w-6" />
-                      {language === "hi"
-                        ? "स्वतः आवेदन भेजें"
-                        : "Send Your Portfolio"}
-                    </Link>
-                  </Button>
-                </div>
-                <div className="mt-10 p-6 bg-white/50 backdrop-blur-sm rounded-2xl">
-                  <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>
-                        {language === "hi"
-                          ? "तुरंत ज्वाइन कर सकते हैं"
-                          : "Can join immediately"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>
-                        {language === "hi"
-                          ? "दूरस्थ कार्य विकल्प"
-                          : "Remote work options"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span>
-                        {language === "hi"
-                          ? "प्रतिस्पर्धी वेतन"
-                          : "Competitive salary"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Footer with Team Info */}
+        {/* Footer Contact Images - Fixed */}
         <section className="mb-8">
           <Card className="border-0 shadow-lg">
             <CardContent className="p-8">
@@ -807,13 +667,17 @@ const TeamPage = () => {
                 </p>
                 <div className="flex flex-col md:flex-row justify-center items-center gap-8">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <div className="relative h-16 w-16 rounded-full overflow-hidden bg-gray-100">
                       <Image
                         src="/owais.jpeg"
                         alt="Owais Siddiqui"
-                        width={64}
-                        height={64}
-                        className="object-contain w-full h-full"
+                        fill
+                        sizes="64px"
+                        style={{
+                          objectFit: "cover",
+                          objectPosition: "center center"
+                        }}
+                        className="rounded-full"
                       />
                     </div>
                     <div>
@@ -828,13 +692,17 @@ const TeamPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="relative h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <div className="relative h-16 w-16 rounded-full overflow-hidden bg-gray-100">
                       <Image
                         src="/waseem.jpeg"
                         alt="Waseem Ahmed"
-                        width={64}
-                        height={64}
-                        className="object-contain w-full h-full"
+                        fill
+                        sizes="64px"
+                        style={{
+                          objectFit: "cover",
+                          objectPosition: "center center"
+                        }}
+                        className="rounded-full"
                       />
                     </div>
                     <div>
@@ -853,22 +721,34 @@ const TeamPage = () => {
             </CardContent>
           </Card>
         </section>
+
+        {/* Custom CSS for better image handling */}
+        <style jsx global>{`
+          @keyframes marquee {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+
+          .animate-marquee {
+            animation: marquee 30s linear infinite;
+          }
+
+          /* Ensure images are properly displayed */
+          img {
+            max-width: 100%;
+            height: auto;
+          }
+
+          /* Fix for image object-fit in Next.js Image component */
+          .image-cover {
+            object-fit: cover !important;
+          }
+        `}</style>
       </main>
-
-      <style jsx global>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
-        .animate-marquee {
-          animation: marquee 30s linear infinite;
-        }
-      `}</style>
     </div>
   );
 };
