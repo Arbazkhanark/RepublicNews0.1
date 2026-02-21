@@ -29,9 +29,9 @@ export function PublicFooter() {
             <Image 
               src="/logo.svg" 
               alt={language === "hi" ? "रिपब्लिक मिरर लोगो" : "Republic Mirror Logo"} 
-              width={300} 
-              height={20} 
-              className="mx-auto mt-1" 
+              width={100} 
+              height={80} 
+              className="" 
             />
             <p className="text-gray-300 mb-4">
               {language === "hi" 

@@ -52,10 +52,10 @@ async function connectToDatabase(): Promise<typeof mongoose> {
     console.log('🔗 Connecting to MongoDB...');
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      console.log('✅ MongoDB connected successfully',MONGODB_URI);
+      console.log('✅ MongoDB connected successfully');
 
       mongooseInstance.connection.on('connected', () => {
-        console.log('✅ Mongoose connected to MongoDB',MONGODB_URI);
+        console.log('✅ Mongoose connected to MongoDB');
       });
 
       mongooseInstance.connection.on('error', (err) => {

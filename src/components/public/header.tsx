@@ -17,31 +17,16 @@ import {
   Globe,
   ChevronDown,
   CloudSun,
-  Wind,
-  TrendingUp,
-  TrendingDown,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 import { mockData } from "@/lib/mock-data";
-import { StockManager } from "./stock-market";
 import Image from "next/image";
-
-interface StockData {
-  ticker: string;
-  name: string;
-  price: number;
-  day_change: number;
-  previous_close_price: number;
-  currency: string;
-}
 
 export function PublicHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { language, setLanguage, t } = useLanguage();
-  const [userStocks, setUserStocks] = useState<string[]>([]);
-  const [stockData, setStockData] = useState<StockData[]>([]);
 
   const [weather, setWeather] = useState<null | {
     temperature: number;
@@ -64,37 +49,6 @@ export function PublicHeader() {
 
     fetchWeather();
   }, []);
-
-  // Fetch stock data when user stocks change
-  useEffect(() => {
-    const fetchStockData = async () => {
-      if (userStocks.length === 0) return;
-
-      try {
-        const symbolsString = userStocks.join("%2C");
-        const response = await fetch(
-          `https://api.stockdata.org/v1/data/quote?symbols=${symbolsString}&api_token=t6wEVlNwzsrUrXklMr9Fdhms57nnPQfnPwlrxBOM`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setStockData(data.data || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch stock data:", error);
-      }
-    };
-
-    fetchStockData();
-
-    // Refresh stock data every 30 seconds
-    const interval = setInterval(fetchStockData, 30000);
-    return () => clearInterval(interval);
-  }, [userStocks]);
-
-  const handleStocksUpdate = (stocks: string[]) => {
-    setUserStocks(stocks);
-  };
 
   const navigationItems = [
     { href: "/", label: t("home") },
@@ -127,8 +81,7 @@ export function PublicHeader() {
       label: language === "hi" ? "राय" : "OPINION",
     },
     {
-      // href: "https://www.youtube.com/@therepublicmirror",
-      href:"https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw",
+      href: "https://www.youtube.com/channel/UCuNl5JS7Ye29A74qcosrkYw",
       label: language === "hi" ? "वीडियो" : "VIDEOS",
       isExternal: true,
     },
@@ -146,12 +99,6 @@ export function PublicHeader() {
         article.status === "published"
     ).length;
   };
-
-  const getStockChangePercent = (stock: StockData) => {
-    return ((stock.day_change / stock.previous_close_price) * 100).toFixed(2);
-  };
-
-  const isPositiveChange = (stock: StockData) => stock.day_change > 0;
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -207,27 +154,19 @@ export function PublicHeader() {
       </div>
 
       {/* Main Header */}
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-1">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center group">
             <div className="text-center transition-transform duration-300 group-hover:scale-105">
-              {/* <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                REPUBLIC MIRROR
-              </h1> */}
               <Image
                 src="/logo.svg"
-                alt="Republic Mirror Tagline"
-                width={150}
+                alt="Republic Mirror"
+                width={60}
                 height={20}
                 className="mx-auto mt-1"
                 priority
-               />
-              {/* <p className="text-sm text-red-600 font-medium">
-                {language === "hi"
-                  ? "सत्य का प्रतिबिंब"
-                  : "Reflection of Truth"}
-              </p> */}
+              />
             </div>
           </Link>
 
@@ -309,13 +248,8 @@ export function PublicHeader() {
             ))}
           </nav>
 
-          {/* Search, Language, Stocks and Mobile Menu */}
+          {/* Search, Language, and Mobile Menu */}
           <div className="flex items-center gap-2">
-            {/* Stock Manager */}
-            <div className="hidden md:block">
-              <StockManager onStocksUpdate={handleStocksUpdate} />
-            </div>
-
             {/* Language Switcher Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -368,11 +302,6 @@ export function PublicHeader() {
               <Menu className="w-5 h-5" />
             </Button>
           </div>
-        </div>
-
-        {/* Mobile Stock Manager */}
-        <div className="md:hidden mt-2">
-          <StockManager onStocksUpdate={handleStocksUpdate} />
         </div>
 
         {/* Search Bar */}
