@@ -151,7 +151,7 @@ export function GoogleAdSense({
 // AdSense Script Loader
 // ===============================
 export function GoogleAdSenseScript() {
-  if (!process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return null;
+  // if (!process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID) return null;
 
   return (
     <script
